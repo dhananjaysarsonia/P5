@@ -64,6 +64,13 @@
 
 /* Begin PBXFileReference section */
 		D10E34CE2458E4D800E368B0 /* NodeHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NodeHandler.h; sourceTree = "<group>"; };
+		D10E34CF2458FA8800E368B0 /* orders.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = orders.tbl; path = tpch/orders.tbl; sourceTree = "<group>"; };
+		D10E34D02458FA8800E368B0 /* customer.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = customer.tbl; path = tpch/customer.tbl; sourceTree = "<group>"; };
+		D10E34D12458FA8800E368B0 /* lineitem.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = lineitem.tbl; path = tpch/lineitem.tbl; sourceTree = "<group>"; };
+		D10E34D22458FA8800E368B0 /* part.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = part.tbl; path = tpch/part.tbl; sourceTree = "<group>"; };
+		D10E34D32458FA8800E368B0 /* nation.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = nation.tbl; path = tpch/nation.tbl; sourceTree = "<group>"; };
+		D10E34D42458FA8800E368B0 /* region.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = region.tbl; path = tpch/region.tbl; sourceTree = "<group>"; };
+		D10E34D52458FA8800E368B0 /* partsupp.tbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = partsupp.tbl; path = tpch/partsupp.tbl; sourceTree = "<group>"; };
 		D14E62762458AEBE007560CA /* index */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = index; sourceTree = BUILT_PRODUCTS_DIR; };
 		D14E62792458AEBE007560CA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		D14E627E2458AF18007560CA /* Statistics.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Statistics.txt; sourceTree = "<group>"; };
@@ -160,6 +167,13 @@
 				D14E62A52458B032007560CA /* gtest.cc */,
 				D14E62A12458B032007560CA /* gtest.h */,
 				D14E62A32458B032007560CA /* main.cc */,
+				D10E34D02458FA8800E368B0 /* customer.tbl */,
+				D10E34D12458FA8800E368B0 /* lineitem.tbl */,
+				D10E34D32458FA8800E368B0 /* nation.tbl */,
+				D10E34CF2458FA8800E368B0 /* orders.tbl */,
+				D10E34D22458FA8800E368B0 /* part.tbl */,
+				D10E34D52458FA8800E368B0 /* partsupp.tbl */,
+				D10E34D42458FA8800E368B0 /* region.tbl */,
 				D14E62962458AF19007560CA /* ParseFunc.h */,
 				D14E628A2458AF18007560CA /* Parser.y */,
 				D14E62842458AF18007560CA /* ParserFunc.y */,
