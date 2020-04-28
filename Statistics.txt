@@ -1,0 +1,24 @@
+BEGIN
+customer 0 customer 1
+c_acctbal 0
+c_address 0
+c_comment 0
+c_custkey 0
+c_mktsegment 0
+c_name 0
+c_nationkey 0
+c_phone 0
+END
+BEGIN
+nation 0 nation 1
+n_comment 0
+n_name 0
+n_nationkey 0
+n_regionkey 0
+END
+BEGIN
+region 0 region 1
+r_comment 0
+r_name 0
+r_regionkey 0
+END
