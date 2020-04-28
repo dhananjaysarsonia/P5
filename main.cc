@@ -1056,7 +1056,7 @@ int main () {
                 break;
         }
         //ToDo: to be removed
-        break;
+//        break;
         cleanup ();
         
         

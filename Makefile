@@ -8,11 +8,11 @@ tag = -n
 endif
 
 main:   y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o
-	$(CC) -o main y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o -ll -lpthread
+	$(CC) -o main y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o -lfl -lpthread
 
 
 gtest: y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o
-	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o -ll -lpthread
+	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o -lfl -lpthread
 #	
 #	
 	
@@ -66,7 +66,7 @@ Schema.o: Schema.cc
 
 y.tab.o: Parser.y
 	yacc -d Parser.y
-	gsed $(tag) y.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/"
+	sed $(tag) y.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/"
 	g++ -c y.tab.c
 
 lex.yy.o: Lexer.l
