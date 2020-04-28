@@ -1,13 +1,12 @@
 #include "BigQ.h"
 
-/* Comparer Implementation */
-Comparer :: Comparer (OrderMaker *order) {
+RecordComparator :: RecordComparator (OrderMaker *order) {
 	
     sortorder = order;
 	
 }
 
-bool Comparer::operator() (Record* left, Record* right) {
+bool RecordComparator::operator() (Record* left, Record* right) {
     
 	ComparisonEngine comparisonEngine;
     
@@ -23,8 +22,7 @@ bool Comparer::operator() (Record* left, Record* right) {
 	
 }
 
-/* Compare Implementation */
-bool Compare :: operator() (Run* left, Run* right) {
+bool RunComparator :: operator() (Run* left, Run* right) {
 	
     ComparisonEngine comparisonEngine;
     
@@ -40,7 +38,6 @@ bool Compare :: operator() (Run* left, Run* right) {
 	
 }
 
-/* Run Implementation */
 Run :: Run (int run_length, int page_offset, File *file, OrderMaker* order) {
     
     runSize = run_length;
@@ -48,7 +45,7 @@ Run :: Run (int run_length, int page_offset, File *file, OrderMaker* order) {
     firstRecord = new Record ();
     runsFile = file;
     sortorder = order;
-    runsFile->GetPage (&bufferPage, pageOffset);
+    runsFile->GetPage (&bufPage, pageOffset);
     GetFirstRecord ();
 	
 }
@@ -75,11 +72,10 @@ int Run :: GetFirstRecord () {
     
     Record* record = new Record();
     
-    // try to get the Record, get next page if necessary
-    if (bufferPage.GetFirst(record) == 0) {
+    if (bufPage.GetFirst(record) == 0) {
         pageOffset++;
-        runsFile->GetPage(&bufferPage, pageOffset);
-        bufferPage.GetFirst(record);
+        runsFile->GetPage(&bufPage, pageOffset);
+        bufPage.GetFirst(record);
     }
     
     runSize--;
@@ -89,24 +85,23 @@ int Run :: GetFirstRecord () {
     return 1;
 }
 
-/* BigQ Implementation */
 bool BigQ :: WriteRunToFile (int runLocation) {
     
     Page* page = new Page();
-    int recordListSize = recordList.size();
+    int recordListSize = recordVector.size();
     
     int firstPageOffset = totalPages;
     int pageCounter = 1;
     
     for (int i = 0; i < recordListSize; i++) {
 		
-        Record* record = recordList[i];
+        Record* record = recordVector[i];
 		
         if ((page->Append (record)) == 0) {
             
             pageCounter++;
             
-            runsFile.AddPage (page, totalPages);
+            curFile.AddPage (page, totalPages);
             totalPages++;
             page->EmptyItOut ();
             page->Append (record);
@@ -117,11 +112,11 @@ bool BigQ :: WriteRunToFile (int runLocation) {
 		
     }
 	
-    runsFile.AddPage(page, totalPages);
+    curFile.AddPage(page, totalPages);
     totalPages++;
     page->EmptyItOut();
     
-    recordList.clear();
+    recordVector.clear();
     delete page;
 	
     AddRunToQueue (recordListSize, firstPageOffset);
@@ -131,7 +126,7 @@ bool BigQ :: WriteRunToFile (int runLocation) {
 
 void BigQ :: AddRunToQueue (int runSize, int pageOffset) {
 	
-    Run* run = new Run(runSize, pageOffset, &runsFile, sortorder);
+    Run* run = new Run(runSize, pageOffset, &curFile, sortorder);
     runQueue.push(run);
 	
 }
@@ -147,7 +142,7 @@ void BigQ :: SortRecordList() {
     fileName = new char[100];
     sprintf (fileName, "%ld.txt", (long)workerThread);
     
-    runsFile.Open (0, fileName);
+    curFile.Open (0, fileName);
     
     while (inputPipe->Remove(record)) {
 		
@@ -160,12 +155,12 @@ void BigQ :: SortRecordList() {
             
             pageCounter++;
 			
-            if (pageCounter == runlength) {
+            if (pageCounter == runSize) {
                 
-                sort (recordList.begin (), recordList.end (), Comparer (sortorder));
-                currentRunLocation = (runsFile.GetLength () == 0) ? 0 : (runsFile.GetLength () - 1);
+                sort (recordVector.begin (), recordVector.end (), RecordComparator (sortorder));
+                currentRunLocation = (curFile.GetLength () == 0) ? 0 : (curFile.GetLength () - 1);
                 
-                int recordListSize = recordList.size ();
+                int recordListSize = recordVector.size ();
                 
                 WriteRunToFile (currentRunLocation); 
                 
@@ -178,18 +173,18 @@ void BigQ :: SortRecordList() {
 			
         }
         
-        recordList.push_back (copyOfRecord);
+        recordVector.push_back (copyOfRecord);
         
     }
     
     
     // Last Run
-    if(recordList.size () > 0) {
+    if(recordVector.size () > 0) {
 		
-        sort (recordList.begin (), recordList.end (), Comparer (sortorder));
-        currentRunLocation = (runsFile.GetLength () == 0) ? 0 : (runsFile.GetLength () - 1);
+        sort (recordVector.begin (), recordVector.end (), RecordComparator (sortorder));
+        currentRunLocation = (curFile.GetLength () == 0) ? 0 : (curFile.GetLength () - 1);
         
-        int recordListSize = recordList.size ();
+        int recordListSize = recordVector.size ();
 		
         WriteRunToFile (currentRunLocation);
         
@@ -204,7 +199,7 @@ void BigQ :: SortRecordList() {
 
 void BigQ :: MergeRuns () {
     
-    Run* run = new Run (&runsFile, sortorder);
+    Run* run = new Run (&curFile, sortorder);
     Page page;
     
     int i = 0;
@@ -228,7 +223,7 @@ void BigQ :: MergeRuns () {
 		
     }
 
-    runsFile.Close();
+    curFile.Close();
     remove(fileName);
     
     outputPipe->ShutDown();
@@ -241,7 +236,7 @@ BigQ :: BigQ (Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
     this->sortorder = &sortorder;
     inputPipe = &in;
     outputPipe = &out;
-    runlength = runlen;
+    runSize = runlen;
     totalPages = 1;
     
     pthread_create(&workerThread, NULL, StartMainThread, (void *)this);

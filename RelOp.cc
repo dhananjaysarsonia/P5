@@ -6,54 +6,42 @@ typedef map<int,bool> intMap;
 typedef map<double,bool> doubleMap;
 
 
-// vector for cleaning memory of a vector
 #define CLEANUPVECTOR(v) \
 	({ for(vector<Record *>::iterator it = v.begin(); it!=v.end(); it++) { \
 		if(!*it) { delete *it; } }\
 		v.clear();\
 })
 
-//------------------------------------------------------------------------------------------------
-void SelectFile::Run (DBFile &inFile, Pipe &outPipe, CNF &selOp, Record &literal) {	
-	// initialize
-	this->inFile = &inFile; this->outPipe = &outPipe;
-	this->selOp = &selOp; 	this->literal = &literal;
-	// create thread
+void SelectFile::Run (DBFile &inFile, Pipe &outPipe, CNF &selOp, Record &literal) {
+	this->inputFile = &inFile; this->outPipe = &outPipe;
+	this->selOp = &selOp; 	this->recLiteral = &literal;
 	pthread_create(&this->thread, NULL, caller, (void*)this);
 }
 
-// auxiliary functions
 void SelectFile::WaitUntilDone () { pthread_join (thread, NULL); }
 void SelectFile::Use_n_Pages (int runlen) { return; }
 void* SelectFile::caller(void *args) { ((SelectFile*)args)->operation(); }
 
-// function is called by the thread
 void* SelectFile::operation() {
 	int count=0;Record rec;ComparisonEngine cmp;
-	inFile->MoveFirst();
+	inputFile->MoveFirst();
 	count=0;
-	while(inFile->GetNext(rec)) {
-		if (cmp.Compare(&rec, literal, selOp)) { outPipe->Insert(&rec);++count; }
+	while(inputFile->GetNext(rec)) {
+		if (cmp.Compare(&rec, recLiteral, selOp)) { outPipe->Insert(&rec);++count; }
 	}
-//	cerr<< count <<" records read from SelectFile Relop"<<endl;
 	outPipe->ShutDown();
 }
 
-//------------------------------------------------------------------------------------------------
 void SelectPipe::Run (Pipe &inPipe, Pipe &outPipe, CNF &selOp, Record &literal) {
-	//initialize
 	this->inPipe = &inPipe;	this->outPipe = &outPipe;
 	this->selOp = &selOp;	this->literal = &literal;
-	// create thread
 	pthread_create(&this->thread, NULL, caller, (void *)this);
 }
 
-// auxiliary functions
 void SelectPipe::WaitUntilDone () { pthread_join (thread, NULL); }
 void SelectPipe::Use_n_Pages (int n) { return; }
 void* SelectPipe::caller(void *args) { ((SelectPipe*)args)->operation(); }
 
-// function is called by the thread
 void* SelectPipe::operation() {
 	Record rec;
 	ComparisonEngine cmp;
@@ -62,22 +50,17 @@ void* SelectPipe::operation() {
 	}
 	outPipe->ShutDown();
 }
-//------------------------------------------------------------------------------------------------
-void Project::Run (Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput, int numAttsOutput) { 
-	// initialize
+void Project::Run (Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput, int numAttsOutput) {
 	this->inPipe = &inPipe;	this->outPipe = &outPipe;
 	this->keepMe = keepMe;	this->numAttsInput = numAttsInput;
 	this->numAttsOutput = numAttsOutput;
-	// create thread
 	pthread_create(&this->thread, NULL, caller, (void *)this);
 }
 
-// auxiliary functions
 void Project::WaitUntilDone () { pthread_join (thread, NULL); }
 void Project::Use_n_Pages (int n) { return; }
 void* Project::caller(void *args) { ((Project*)args)->operation(); }
 
-// function is called by the thread
 void* Project::operation() {
 	Record rec;
 	while (inPipe->Remove(&rec)) { 
@@ -86,7 +69,6 @@ void* Project::operation() {
 	}
 	outPipe->ShutDown();
 }
-//------------------------------------------------------------------------------------------------
 
 void Join::Run (Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp, Record &literal) { 
 	this->inPipeL = &inPipeL;
@@ -101,36 +83,28 @@ void Join::WaitUntilDone () { pthread_join (thread, NULL); }
 void Join::Use_n_Pages (int n) { rl = n; }
 void* Join::caller(void *args) { ((Join*)args)->operation(); }
 
-// main join operation
 void* Join::operation() {
-//	selOp->PrintWithSchema(new Schema("catalog", "region"), new Schema("catalog", "nation"), literal);
-	// initialize
-	Record lr, rr, m; 
+	Record lr, rr, m;
 	OrderMaker lom, rom;
 
-	// getsortorders and create bigq
 	selOp->GetSortOrders(lom,rom);
 	
-	// sorted-merge join or block-nested join
-	if(lom.getNumAtts()>0&&rom.getNumAtts()>0) { 
+	if(lom.getNumAtts()>0&&rom.getNumAtts()>0) {
 		sortMergeJoin(lr,rr,m,lom,rom); 
 	}
 	else {
 		blockNestedJoin(lr,rr,m,lom,rom); 
 	}
 
-	//shutdown pipe
 	outPipe->ShutDown();
 }
 
 void Join::sortMergeJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom) {
 	
-	// intialize
 	Pipe spl(500), spr(500); ComparisonEngine ce;
 	BigQ lq(*inPipeL, spl, lom, rl); 
 	BigQ rq(*inPipeR, spr, rom, rl);
 
-	// sort and merge
 	bool le=spl.Remove(&lr); bool re=spr.Remove(&rr);int c=0;int lc=1; int rc=1;
 	while(le&&re) {
 	
@@ -158,16 +132,13 @@ void Join::sortMergeJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMa
 		}
 	}
 
-	// empty pipes
 	while(spl.Remove(&lr)); while(spr.Remove(&rr));
 }
 
 void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom) {
 
-	// initialize
-	ComparisonEngine ce; Record r, *trl, *trr; int c=0, lc=0, rc=0; Page *lp, *rp; 
+	ComparisonEngine ce; Record r, *trl, *trr; int c=0, lc=0, rc=0; Page *lp, *rp;
 
-	// create dbfile; fill dbfile; move to first record
 	DBFile dbf;
     char * fileName = Utilities::newRandomFileName(".bin");
     
@@ -178,28 +149,22 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
     }
     dbf.Close();
     
-    // file reopened and ready to read.
     dbf.Open(fileName);
     dbf.MoveFirst();
 
-//    cout << "right file: " << c << endl;
 
-	// if empty right pipe
 	if (!c) {
         while(inPipeL->Remove(&lr));
         return;
     }
     
-//  Variable For Block Merge
 	lp = new Page();
     rp = new Page();
 	trl = new Record();
     trr = new Record();
-//    int pmc = 0;
 	while(inPipeL->Remove(&lr)) {
 		++lc;
 		if (!lp->Append(&lr)) {
-//			cout << "page number :" << ++lpid << " Page Count "<< lp->getNumRecs() << endl;
             
 			Record * lpr; vector <Record *> lrvec;
             lpr = new Record();
@@ -213,7 +178,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                 lrvec.push_back(&lr);
             }
             
-//            cout<<lrvec.size()<<" ex: "<<lrvec.size()*80<<endl;
             lrc += lrvec.size();
             
             Record * rpr; vector <Record *> rrvec;
@@ -223,7 +187,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
 
                 ++rrc;
                 if(!rp->Append(&rr)) {
-                    //                    cout << "page number :" << " Page Count "<< rp->getNumRecs() << endl;
                     while(rp->GetFirst(rpr)){
                         rrvec.push_back(rpr);
                         rpr = new Record();
@@ -231,7 +194,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                     if (sizeof(rr.bits)) {
                         rrvec.push_back(&rr);
                     }
-                    //                    cout<<rrvec.size()<<endl;
                     for (int i=0; i < lrvec.size(); i++) {
                         for ( int j=0; j < rrvec.size();j++){
                             if (ce.Compare(lrvec[i], rrvec[j],literal, selOp)) {
@@ -244,8 +206,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                 }
             }
             
-//            cout<<"Merges: "<<mc-pmc<<" total:"<<mc<<endl;
-//            pmc=mc;
             dbf.MoveFirst();
             CLEANUPVECTOR(lrvec);
 		}
@@ -254,14 +214,12 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
 	}
     if(lp->getNumRecs()){
         dbf.MoveFirst();
-//        cout << "page number :" << ++lpid << " Page Count "<< lp->getNumRecs() << endl;
         Record * lpr; vector <Record *> lrvec;
         lpr = new Record();
         while(lp->GetFirst(lpr)){
             lrvec.push_back(lpr);
             lpr = new Record();
         }
-//        cout<<lrvec.size()<<" ex : "<<lrvec.size()*80<<endl;
         lrc += lrvec.size();
         Record * rpr; vector <Record *> rrvec;
         rpr = new Record();
@@ -288,8 +246,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                 
             }
         }
-//        cout<<"Merges: "<<mc-pmc<<" total:"<<mc<<endl;
-//        pmc=mc;
         dbf.MoveFirst();
         CLEANUPVECTOR(lrvec);
         
@@ -311,13 +267,6 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
         cerr<< "Error deleting file" ;
     }
 
-//	cout << "left record count "  << lc << endl;
-//	cout << "merge record count " << mc << endl;
-//	cout << "----------------------------------------------" << endl;
-//	cout << "processed record count "  << lrc << endl;
-//	cout << "processed record count " << rrc << endl;
-
-	// empty pipes
 	while(inPipeL->Remove(&lr));
 	while(inPipeR->Remove(&rr));
 }
@@ -340,7 +289,6 @@ void Join::MergePages(vector <Record *> lrvec, Page *rp, OrderMaker &lom, OrderM
 	}
 }
 
-// merge 2 records for join
 void Join::MergeRecord(Record *lr, Record *rr) {
 	
 	int nal=lr->getNumAtts(), nar=rr->getNumAtts();
@@ -349,77 +297,56 @@ void Join::MergeRecord(Record *lr, Record *rr) {
 	for (int k=0;k<nar;k++) atts[k+nal]=k;
 	Record m;
 	m.MergeRecords(lr, rr, nal, nar, atts, nal+nar, nal);
-	// Schema nation("catalog","nation");
-	// Schema region("catalog","region");
-	// Schema joinSchema;
-	// joinSchema.GetSchemaForJoin(region,nation);
-	// m.Print(&joinSchema);
+
 	outPipe->Insert(&m);
 	delete atts;
 	return;
 }
 
 
-//------------------------------------------------------------------------------------------------
-void DuplicateRemoval::Run (Pipe &inPipe, Pipe &outPipe, Schema &mySchema) { 
-	// initialize
+void DuplicateRemoval::Run (Pipe &inPipe, Pipe &outPipe, Schema &mySchema) {
 	this->inPipe = &inPipe; this->outPipe = &outPipe;
 	this->mySchema = &mySchema;
-	// create thread
 	pthread_create(&this->thread,NULL, caller, (void*)this);
 }
 
-// auxiliary functions
 void DuplicateRemoval::WaitUntilDone () { pthread_join (thread, NULL); }
 void DuplicateRemoval::Use_n_Pages (int n) { this->rl = n; }
 void* DuplicateRemoval::caller(void *args) { ((DuplicateRemoval*)args)->operation(); }
 
-// function is called by the thread
 void* DuplicateRemoval::operation() {
 
-	// initialize
 	OrderMaker om(mySchema); ComparisonEngine ce;
 	Record pr, cr;Pipe *sp = new Pipe(100);
 	BigQ sq(*inPipe, *sp, om, rl);
 	
-	// remove duplicates
 	sp->Remove(&pr);
 	while(sp->Remove(&cr)) {
 		if(!ce.Compare(&pr, &cr, &om)) continue;
 		outPipe->Insert(&pr);pr.Consume(&cr);
 	}
 
-	// insert and shut
 	outPipe->Insert(&pr);outPipe->ShutDown();
 }
 
-//------------------------------------------------------------------------------------------------
-void Sum::Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe) { 
+void Sum::Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe) {
 
-	// initialize
-	this->inPipe = &inPipe; this->outPipe = &outPipe; 
+	this->inPipe = &inPipe; this->outPipe = &outPipe;
 	this->computeMe = &computeMe;
 
-	// create thread
 	pthread_create(&this->thread, NULL, caller, (void *)this);
 }
 
-// auxiliary functions
 void Sum::WaitUntilDone () { pthread_join (thread, NULL); }
 void Sum::Use_n_Pages (int n) { return; }
 void* Sum::caller(void *args) { ((Sum*)args)->operation(); }
 
-// function is called by the thread
 void* Sum::operation() {
 	Record t; Record rec; Type rt;
 	int si = 0; double sd = 0.0f;
 
 	while(inPipe->Remove(&rec)) {
-//		Schema nation("catalog","nation");
-//		Schema region("catalog","region");
-//		Schema joinSchema;
-//		joinSchema.GetSchemaForJoin(nation,region);
-//		rec.Print(&joinSchema);
+
 		int ti = 0; double td = 0.0f;
 		rt = this->computeMe->Apply(rec, ti, td);
 		rt == Int ? si += ti : sd += td;
@@ -434,24 +361,19 @@ void* Sum::operation() {
 	outPipe->Insert(&t);outPipe->ShutDown();
 }
 
-//------------------------------------------------------------------------------------------------
-void GroupBy::Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe,bool distinctFunc) { 
+void GroupBy::Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe,bool distinctFunc) {
 	
-	// initialize
 	this->inPipe = &inPipe;	this->outPipe = &outPipe;
 	this->groupAtts = &groupAtts; this->computeMe = &computeMe;
     this->distinctFunc = distinctFunc;
 
-	// create
 	pthread_create(&this->thread, NULL, caller, (void *)this);
 }
 
-// auxiliary functions
 void GroupBy::WaitUntilDone () { pthread_join (thread, NULL); }
 void GroupBy::Use_n_Pages (int n) { rl=n; }
 void* GroupBy::caller(void *args) { ((GroupBy*)args)->operation(); }
 
-// function is called by the thread
 void* GroupBy::operation() {
     intMap imap;
     doubleMap dmap;
@@ -548,7 +470,6 @@ void* GroupBy::operation() {
             imap.clear();
             dmap.clear();
         }
-//        tmpRec.Print(&j2);
         valType = computeMe->Apply(tmpRec, intVal, doubleVal);
         if (valType == Int) {
             if (this->distinctFunc){
@@ -592,7 +513,6 @@ void* GroupBy::operation() {
      Schema region("catalog","region");
      Schema joinSchema;
      joinSchema.GetSchemaForJoin(region,nation);
-//    lastRec.Print(&joinSchema);
     
     for (int i = 0; i < groupAtts->numAtts; ++i) {
         Type curAttType = groupAtts->whichTypes[i];
@@ -626,30 +546,25 @@ void* GroupBy::operation() {
     pthread_exit(NULL);
 }
 
-//------------------------------------------------------------------------------------------------
-void WriteOut::Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) { 
+void WriteOut::Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) {
 	this->inPipe = &inPipe;
 	this->mySchema = &mySchema;
 	this->outFile = outFile;
 	pthread_create(&this->thread, NULL, caller, (void *)this);
 }
 
-// auxiliary
 void WriteOut::WaitUntilDone () { pthread_join (thread, NULL);}
 void WriteOut::Use_n_Pages (int n) { return; }
 void* WriteOut::caller(void *args) { ((WriteOut*)args)->operation(); }
 
-// function similar to record.Print()
 void* WriteOut::operation() {
     Record t;
     long rc=0;
-    // loop through all of the attributes
     int n = mySchema->GetNumAtts();
     Attribute *atts = mySchema->GetAtts();
     while (inPipe->Remove(&t) )
     {
         rc++;
-        // loop through all of the attributes
         for (int i = 0; i < n; i++) {
 
             fprintf(outFile,"%s: ",atts[i].name);
@@ -679,6 +594,6 @@ void* WriteOut::operation() {
         fprintf(outFile,"%c",'\n');
     }
     fclose(outFile);
-    cout<<"\n Number of records written to output file : "<<rc<<"\n";
+    cout<<"\n Records written to output file : "<<rc<<"\n";
 }
 

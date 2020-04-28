@@ -7,6 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D10E34A62458B1C600E368B0 /* BigQ.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E629C2458AF19007560CA /* BigQ.cc */; };
+		D10E34A72458B1C600E368B0 /* BigQ.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E629F2458AF19007560CA /* BigQ.h */; };
+		D10E34A82458B1C600E368B0 /* catalog in Sources */ = {isa = PBXBuildFile; fileRef = D14E627F2458AF18007560CA /* catalog */; };
+		D10E34A92458B1C600E368B0 /* Comparison.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62892458AF18007560CA /* Comparison.cc */; };
+		D10E34AA2458B1C600E368B0 /* Comparison.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E628B2458AF18007560CA /* Comparison.h */; };
+		D10E34AB2458B1C600E368B0 /* ComparisonEngine.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E629E2458AF19007560CA /* ComparisonEngine.cc */; };
+		D10E34AC2458B1C600E368B0 /* ComparisonEngine.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62882458AF18007560CA /* ComparisonEngine.h */; };
+		D10E34AD2458B1C600E368B0 /* counter.txt in Sources */ = {isa = PBXBuildFile; fileRef = D14E628E2458AF18007560CA /* counter.txt */; };
+		D10E34AE2458B1C600E368B0 /* DBFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62852458AF18007560CA /* DBFile.cc */; };
+		D10E34AF2458B1C600E368B0 /* DBFile.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62922458AF18007560CA /* DBFile.h */; };
+		D10E34B02458B1C600E368B0 /* Defs.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E628F2458AF18007560CA /* Defs.h */; };
+		D10E34B12458B1C600E368B0 /* File.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62952458AF19007560CA /* File.cc */; };
+		D10E34B22458B1C600E368B0 /* File.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62902458AF18007560CA /* File.h */; };
+		D10E34B32458B1C600E368B0 /* Function.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62862458AF18007560CA /* Function.cc */; };
+		D10E34B42458B1C600E368B0 /* Function.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62832458AF18007560CA /* Function.h */; };
+		D10E34B52458B1C600E368B0 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A02458AF19007560CA /* Makefile */; };
+		D10E34B62458B1C600E368B0 /* gtest_main.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A42458B032007560CA /* gtest_main.cc */; };
+		D10E34B72458B1C600E368B0 /* gtest-all.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A22458B032007560CA /* gtest-all.cc */; };
+		D10E34B82458B1C600E368B0 /* gtest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A52458B032007560CA /* gtest.cc */; };
+		D10E34B92458B1C600E368B0 /* gtest.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A12458B032007560CA /* gtest.h */; };
+		D10E34BA2458B1C600E368B0 /* main.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62A32458B032007560CA /* main.cc */; };
+		D10E34BB2458B1C600E368B0 /* ParseFunc.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62962458AF19007560CA /* ParseFunc.h */; };
+		D10E34BC2458B1C600E368B0 /* Parser.y in Sources */ = {isa = PBXBuildFile; fileRef = D14E628A2458AF18007560CA /* Parser.y */; };
+		D10E34BD2458B1C600E368B0 /* ParserFunc.y in Sources */ = {isa = PBXBuildFile; fileRef = D14E62842458AF18007560CA /* ParserFunc.y */; };
+		D10E34BE2458B1C600E368B0 /* ParseTree.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62982458AF19007560CA /* ParseTree.h */; };
+		D10E34BF2458B1C600E368B0 /* Pipe.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62812458AF18007560CA /* Pipe.cc */; };
+		D10E34C02458B1C600E368B0 /* Pipe.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62932458AF19007560CA /* Pipe.h */; };
+		D10E34C12458B1C600E368B0 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E629D2458AF19007560CA /* Record.cc */; };
+		D10E34C22458B1C600E368B0 /* Record.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62912458AF18007560CA /* Record.h */; };
+		D10E34C32458B1C600E368B0 /* RelOp.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62822458AF18007560CA /* RelOp.cc */; };
+		D10E34C42458B1C600E368B0 /* RelOp.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E628C2458AF18007560CA /* RelOp.h */; };
+		D10E34C52458B1C600E368B0 /* RelStats.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62802458AF18007560CA /* RelStats.h */; };
+		D10E34C62458B1C600E368B0 /* Schema.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E628D2458AF18007560CA /* Schema.cc */; };
+		D10E34C72458B1C600E368B0 /* Schema.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62972458AF19007560CA /* Schema.h */; };
+		D10E34C82458B1C600E368B0 /* Statistics.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E62992458AF19007560CA /* Statistics.cc */; };
+		D10E34C92458B1C600E368B0 /* Statistics.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62942458AF19007560CA /* Statistics.h */; };
+		D10E34CA2458B1C600E368B0 /* Statistics.txt in Sources */ = {isa = PBXBuildFile; fileRef = D14E627E2458AF18007560CA /* Statistics.txt */; };
+		D10E34CB2458B1C600E368B0 /* TwoWayList.cc in Sources */ = {isa = PBXBuildFile; fileRef = D14E629A2458AF19007560CA /* TwoWayList.cc */; };
+		D10E34CC2458B1C600E368B0 /* TwoWayList.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E62872458AF18007560CA /* TwoWayList.h */; };
+		D10E34CD2458B1C600E368B0 /* Utilities.h in Sources */ = {isa = PBXBuildFile; fileRef = D14E629B2458AF19007560CA /* Utilities.h */; };
 		D14E627A2458AEBE007560CA /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D14E62792458AEBE007560CA /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -220,6 +260,46 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D10E34A62458B1C600E368B0 /* BigQ.cc in Sources */,
+				D10E34A72458B1C600E368B0 /* BigQ.h in Sources */,
+				D10E34A82458B1C600E368B0 /* catalog in Sources */,
+				D10E34A92458B1C600E368B0 /* Comparison.cc in Sources */,
+				D10E34AA2458B1C600E368B0 /* Comparison.h in Sources */,
+				D10E34AB2458B1C600E368B0 /* ComparisonEngine.cc in Sources */,
+				D10E34AC2458B1C600E368B0 /* ComparisonEngine.h in Sources */,
+				D10E34AD2458B1C600E368B0 /* counter.txt in Sources */,
+				D10E34AE2458B1C600E368B0 /* DBFile.cc in Sources */,
+				D10E34AF2458B1C600E368B0 /* DBFile.h in Sources */,
+				D10E34B02458B1C600E368B0 /* Defs.h in Sources */,
+				D10E34B12458B1C600E368B0 /* File.cc in Sources */,
+				D10E34B22458B1C600E368B0 /* File.h in Sources */,
+				D10E34B32458B1C600E368B0 /* Function.cc in Sources */,
+				D10E34B42458B1C600E368B0 /* Function.h in Sources */,
+				D10E34B52458B1C600E368B0 /* Makefile in Sources */,
+				D10E34B62458B1C600E368B0 /* gtest_main.cc in Sources */,
+				D10E34B72458B1C600E368B0 /* gtest-all.cc in Sources */,
+				D10E34B82458B1C600E368B0 /* gtest.cc in Sources */,
+				D10E34B92458B1C600E368B0 /* gtest.h in Sources */,
+				D10E34BA2458B1C600E368B0 /* main.cc in Sources */,
+				D10E34BB2458B1C600E368B0 /* ParseFunc.h in Sources */,
+				D10E34BC2458B1C600E368B0 /* Parser.y in Sources */,
+				D10E34BD2458B1C600E368B0 /* ParserFunc.y in Sources */,
+				D10E34BE2458B1C600E368B0 /* ParseTree.h in Sources */,
+				D10E34BF2458B1C600E368B0 /* Pipe.cc in Sources */,
+				D10E34C02458B1C600E368B0 /* Pipe.h in Sources */,
+				D10E34C12458B1C600E368B0 /* Record.cc in Sources */,
+				D10E34C22458B1C600E368B0 /* Record.h in Sources */,
+				D10E34C32458B1C600E368B0 /* RelOp.cc in Sources */,
+				D10E34C42458B1C600E368B0 /* RelOp.h in Sources */,
+				D10E34C52458B1C600E368B0 /* RelStats.h in Sources */,
+				D10E34C62458B1C600E368B0 /* Schema.cc in Sources */,
+				D10E34C72458B1C600E368B0 /* Schema.h in Sources */,
+				D10E34C82458B1C600E368B0 /* Statistics.cc in Sources */,
+				D10E34C92458B1C600E368B0 /* Statistics.h in Sources */,
+				D10E34CA2458B1C600E368B0 /* Statistics.txt in Sources */,
+				D10E34CB2458B1C600E368B0 /* TwoWayList.cc in Sources */,
+				D10E34CC2458B1C600E368B0 /* TwoWayList.h in Sources */,
+				D10E34CD2458B1C600E368B0 /* Utilities.h in Sources */,
 				D14E627A2458AEBE007560CA /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

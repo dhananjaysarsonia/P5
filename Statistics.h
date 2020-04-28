@@ -11,7 +11,7 @@ using namespace std;
 class Statistics
 {
 private:
-    map<string,RelStats*> statsMap;
+    map<string,RelStats*> staMap;
 public:
     Statistics();
     ~Statistics();

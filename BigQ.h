@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class Comparer {
+class RecordComparator {
 	
 private:
 	
@@ -19,7 +19,7 @@ private:
 	
 public:
 	
-	Comparer (OrderMaker *order);
+	RecordComparator (OrderMaker *order);
 	bool operator() (Record* left, Record* right);
 	
 };
@@ -29,7 +29,7 @@ class Run {
 	
 private:
 	
-	Page bufferPage;
+	Page bufPage;
 	
 public:
 	
@@ -48,7 +48,7 @@ public:
 	
 };
 
-class Compare {
+class RunComparator {
 	
 private:
 	
@@ -60,7 +60,6 @@ public:
 	
 }; 
 
-// simple struct to pass variables from BigQ to its worker thread
 typedef struct {
 	
 	Pipe *in;
@@ -78,7 +77,7 @@ private:
     Pipe *outputPipe;
     pthread_t workerThread;
     char *fileName;
-    priority_queue<Run*, vector<Run*>, Compare> runQueue;
+    priority_queue<Run*, vector<Run*>, RunComparator> runQueue;
     OrderMaker *sortorder;
 	
 	bool WriteRunToFile (int runLocation);
@@ -87,9 +86,9 @@ private:
 
 public:
 	
-	File runsFile;
-    vector<Record*> recordList;
-    int runlength;
+	File curFile;
+    vector<Record*> recordVector;
+    int runSize;
 	
 	BigQ (Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen);
 	~BigQ () {};

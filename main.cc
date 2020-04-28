@@ -1073,26 +1073,7 @@ int main () {
 		
 		if (queryType == 1) {
 			
-			// cout << "SELECT" << endl;
-			/*
-			cout << endl << "Print Boolean :" << endl;
-			PrintParseTree (boolean);
-			
-			cout << endl << "Print TableList :" << endl;
-			PrintTablesAliases (tables);
-			
-			cout << endl << "Print NameList groupingAtts :" << endl;
-			PrintNameList (groupingAtts);
-			
-			cout << endl << "Print NameList attsToSelect:" << endl;
-			PrintNameList (attsToSelect);
-			
-			cout << finalFunction << endl;
-			cout << endl << "Print Function:" << endl;
-			PrintFunction (finalFunction);
-			
-			cout << endl;
-			*/
+    
 			vector<char *> tableNames;
 			vector<char *> joinOrder;
 			vector<char *> buffer (2);

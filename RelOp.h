@@ -22,8 +22,8 @@ class RelationalOp {
 class SelectFile : public RelationalOp { 
 	private:
 	pthread_t thread;
-	Record *literal;
-	DBFile *inFile;
+	Record *recLiteral;
+	DBFile *inputFile;
 	Pipe *outPipe;
 	CNF *selOp;
 	public:
