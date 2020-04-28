@@ -11,8 +11,8 @@ main:   y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Funct
 	$(CC) -o main y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o -ll -lpthread
 
 
-#gtest: y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o File.o Run.o RecordComparator.o RunComparator.o BigQ.o FileHandler.o HeapHandler.o SortedFileHandler.o DBFile.o Statistics.o RelationHelper.o AttributeHelper.o gtest-all.o gtest.o
-#	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o File.o Run.o RecordComparator.o RunComparator.o BigQ.o FileHandler.o HeapHandler.o SortedFileHandler.o DBFile.o Statistics.o RelationHelper.o AttributeHelper.o gtest-all.o gtest.o -ll -lpthread
+gtest: y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o
+	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o -ll -lpthread
 #	
 #	
 	

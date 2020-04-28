@@ -119,3 +119,48 @@ c_acctbal Double
 c_mktsegment String
 c_comment String
 END
+
+BEGIN
+nation
+nation.tbl
+n_nationkey Int
+n_name String
+n_regionkey Int
+n_comment String
+END
+
+BEGIN
+nation
+nation.tbl
+n_nationkey Int
+n_name String
+n_regionkey Int
+n_comment String
+END
+
+BEGIN
+nation
+nation.tbl
+n_nationkey Int
+n_name String
+n_regionkey Int
+n_comment String
+END
+
+BEGIN
+nation
+nation.tbl
+n_nationkey Int
+n_name String
+n_regionkey Int
+n_comment String
+END
+
+BEGIN
+nation
+nation.tbl
+n_nationkey Int
+n_name String
+n_regionkey Int
+n_comment String
+END

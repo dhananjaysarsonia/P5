@@ -74,7 +74,7 @@ void Join::Run (Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp, Record 
 	this->inPipeL = &inPipeL;
 	this->inPipeR = &inPipeR;
 	this->outPipe = &outPipe;
-	this->selOp = &selOp;
+	this->cnfOP = &selOp;
 	this->literal = &literal;
 	pthread_create(&thread, NULL, caller, (void *)this);
 
@@ -87,13 +87,13 @@ void* Join::operation() {
 	Record lr, rr, m;
 	OrderMaker lom, rom;
 
-	selOp->GetSortOrders(lom,rom);
+	cnfOP->GetSortOrders(lom,rom);
 	
 	if(lom.getNumAtts()>0&&rom.getNumAtts()>0) {
 		sortMergeJoin(lr,rr,m,lom,rom); 
 	}
 	else {
-		blockNestedJoin(lr,rr,m,lom,rom); 
+		nestedJoinBlock(lr,rr,m,lom,rom); 
 	}
 
 	outPipe->ShutDown();
@@ -135,7 +135,7 @@ void Join::sortMergeJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMa
 	while(spl.Remove(&lr)); while(spr.Remove(&rr));
 }
 
-void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom) {
+void Join::nestedJoinBlock(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom) {
 
 	ComparisonEngine ce; Record r, *trl, *trr; int c=0, lc=0, rc=0; Page *lp, *rp;
 
@@ -196,7 +196,7 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                     }
                     for (int i=0; i < lrvec.size(); i++) {
                         for ( int j=0; j < rrvec.size();j++){
-                            if (ce.Compare(lrvec[i], rrvec[j],literal, selOp)) {
+                            if (ce.Compare(lrvec[i], rrvec[j],literal, cnfOP)) {
                                 ++mc;
                                 MergeRecord(lrvec[i], rrvec[j]);
                             }
@@ -236,7 +236,7 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
                  }
                 for (int i=0; i < lrvec.size(); i++) {
                     for ( int j=0; j < rrvec.size();j++){
-                            if (ce.Compare(lrvec[i], rrvec[j],literal, selOp)) {
+                            if (ce.Compare(lrvec[i], rrvec[j],literal, cnfOP)) {
                                 ++mc;
                                 MergeRecord(lrvec[i], rrvec[j]);
                             }

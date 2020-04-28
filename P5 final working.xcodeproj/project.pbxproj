@@ -63,6 +63,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D10E34CE2458E4D800E368B0 /* NodeHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NodeHandler.h; sourceTree = "<group>"; };
 		D14E62762458AEBE007560CA /* index */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = index; sourceTree = BUILT_PRODUCTS_DIR; };
 		D14E62792458AEBE007560CA /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		D14E627E2458AF18007560CA /* Statistics.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Statistics.txt; sourceTree = "<group>"; };
@@ -151,6 +152,7 @@
 				D14E62952458AF19007560CA /* File.cc */,
 				D14E62902458AF18007560CA /* File.h */,
 				D14E62862458AF18007560CA /* Function.cc */,
+				D10E34CE2458E4D800E368B0 /* NodeHandler.h */,
 				D14E62832458AF18007560CA /* Function.h */,
 				D14E62A02458AF19007560CA /* Makefile */,
 				D14E62A42458B032007560CA /* gtest_main.cc */,

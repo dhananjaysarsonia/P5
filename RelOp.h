@@ -75,7 +75,7 @@ class Join : public RelationalOp {
 	Pipe *inPipeL;
 	Pipe *inPipeR;
 	Pipe *outPipe;
-	CNF *selOp;
+	CNF *cnfOP;
 	Record *literal;
 	int rl, mc=0, lrc=0, rrc=0;
 	public:
@@ -87,7 +87,7 @@ class Join : public RelationalOp {
 	void MergePages(vector<Record*> lrvec, Page *rp, OrderMaker &lom, OrderMaker &rom);
 	void MergeRecord(Record *lr, Record *rr);
 	void sortMergeJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom);
-	void blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom);
+	void nestedJoinBlock(Record lr,Record rr, Record m, OrderMaker &lom, OrderMaker &rom);
 };
 
 //-------------------------------------------------------------------------------------
