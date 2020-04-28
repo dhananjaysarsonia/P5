@@ -1,3 +1,12 @@
+//
+//  DBfile.cpp
+//  DBIp22final
+//
+//  Created by Dhananjay Sarsonia on 2/1/20.
+//  Copyright © 2020 Dhananjay Sarsonia and Arushi Singhvi All rights reserved.
+//
+
+
 #include "DBFile.h"
 #include "Utilities.h"
 
@@ -16,10 +25,10 @@ int FileHandler::getPageLoc() {
 
 int FileHandler::getPageLocRead(DbBufferMode mode) {
     if (mode == WRITE){
-        return myPreferencePtr->curPage-2;
+        return dbProp->curPage-2;
     }
     else if (mode == READ){
-        return myPreferencePtr->curPage;
+        return dbProp->curPage;
     }
 }
 
@@ -30,29 +39,28 @@ int FileHandler::getPageLocRewrite(){
 }
 
 void FileHandler::Create(char * f_path,fType f_type, void *startup){
-    // opening file with given file extension
     myFile.Open(0,(char *)f_path);
     if (startup!=NULL and f_type==sorted){
-        myPreferencePtr->orderMaker = ((SortedStartUp *)startup)->o;
-        myPreferencePtr->runLength  = ((SortedStartUp *)startup)->l;
+        dbProp->orderMaker = ((SortedStartUp *)startup)->o;
+        dbProp->runLength  = ((SortedStartUp *)startup)->l;
     }
 }
 
 int FileHandler::Open(char * f_path){
-    // opening file with given file extension
+
     myFile.Open(1,(char *)f_path);
     if(myFile.IsFileOpen()){
-        // Load the last saved state from preference.
-        if( myPreferencePtr->pageBufferMode == READ){
-            myFile.GetPage(&myPage,getPageLocRead(myPreferencePtr->pageBufferMode));
+        // Load Db properties
+        if( dbProp->pageBufferMode == READ){
+            myFile.GetPage(&myPage,getPageLocRead(dbProp->pageBufferMode));
             Record myRecord;
-            for (int i = 0 ; i < myPreferencePtr->currentRecordPosition; i++){
+            for (int i = 0 ; i < dbProp->currentRecordPosition; i++){
                 myPage.GetFirst(&myRecord);
             }
-            myPreferencePtr->curPage++;
+            dbProp->curPage++;
         }
-        else if(myPreferencePtr->pageBufferMode == WRITE && !myPreferencePtr->isFull){
-            myFile.GetPage(&myPage,getPageLocRead(myPreferencePtr->pageBufferMode));
+        else if(dbProp->pageBufferMode == WRITE && !dbProp->isFull){
+            myFile.GetPage(&myPage,getPageLocRead(dbProp->pageBufferMode));
         }
         return 1;
     }
@@ -71,14 +79,8 @@ int FileHandler::GetNext(Record &fetchme, CNF &cnf, Record &literal){}
 
 int FileHandler::Close(){}
 
-/*-----------------------------------END--------------------------------------------*/
-
-
-/*-----------------------------------------------------------------------------------*/
-//                   HEAP DBFILE CLASS FUNCTION DEFINATION
-/*-----------------------------------------------------------------------------------*/
 HeapHandler :: HeapHandler(DBProperties * preference){
-    myPreferencePtr = preference;
+    dbProp = preference;
 }
 
 HeapHandler::~HeapHandler(){
@@ -87,92 +89,81 @@ HeapHandler::~HeapHandler(){
 
 void HeapHandler::MoveFirst () {
     if (myFile.IsFileOpen()){
-        if (myPreferencePtr->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
-            if(!myPreferencePtr->isFileWritten){
+        if (dbProp->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
+            if(!dbProp->isFileWritten){
                 myFile.AddPage(&myPage,getPageLocRewrite());
             }
         }
         myPage.EmptyItOut();
-        myPreferencePtr->pageBufferMode = READ;
+        dbProp->pageBufferMode = READ;
         myFile.MoveToFirst();
-        myPreferencePtr->curPage = 0;
-        myPreferencePtr->currentRecordPosition = 0;
+        dbProp->curPage = 0;
+        dbProp->currentRecordPosition = 0;
     }
 }
 
 void HeapHandler :: Add (Record &rec) {
 
     if (!myFile.IsFileOpen()){
-        cerr << "Trying to load a file which is not open!";
+        cerr << "Bad open!";
         exit(1);
     }
 
-     // Flush the page data from which you are reading and load the last page to start appending records.
-     if (myPreferencePtr->pageBufferMode == READ ) {
+     // Flush the data into file if the file was in read mode
+     if (dbProp->pageBufferMode == READ ) {
             if( myPage.getNumRecs() > 0){
                 myPage.EmptyItOut();
             }
-            // open page the last written page to start rewriting
             myFile.GetPage(&myPage,getPageLocRewrite());
-            myPreferencePtr->curPage = getPageLocRewrite();
-            myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
-            myPreferencePtr->isFileReWrite = true;
+            dbProp->curPage = getPageLocRewrite();
+            dbProp->currentRecordPosition = myPage.getNumRecs();
+            dbProp->isFileReWrite = true;
     }
 
-    // set DBFile in write mode
-    myPreferencePtr->pageBufferMode = WRITE;
+    dbProp->pageBufferMode = WRITE;
 
-    if(myPage.getNumRecs()>0 && myPreferencePtr->isFileWritten){
-                    myPreferencePtr->isFileReWrite = true;
+    if(myPage.getNumRecs()>0 && dbProp->isFileWritten){
+                    dbProp->isFileReWrite = true;
     }
 
-    // add record to current page
-    // check if the page is full
+
     if(!this->myPage.Append(&rec)) {
 
-        //cout << "DBFile page full, writing to disk ...." << myFile.GetLength() << endl;
 
-        // if page is full, then write page to disk. Check if the date needs to rewritten or not
-        if (myPreferencePtr->isFileReWrite){
+        if (dbProp->isFileReWrite){
             this->myFile.AddPage(&this->myPage,getPageLocRewrite());
-            myPreferencePtr->isFileReWrite = false;
+            dbProp->isFileReWrite = false;
         }
         else{
             this->myFile.AddPage(&this->myPage,getPageLoc());
         }
 
-        // empty page
         this->myPage.EmptyItOut();
 
-        // add again to page
         this->myPage.Append(&rec);
     }
-    myPreferencePtr->isFileWritten=false;
+    dbProp->isFileWritten=false;
 }
 
 void HeapHandler :: Load (Schema &f_schema, const char *loadpath) {
 
     if (!myFile.IsFileOpen()){
-        cerr << "Trying to load a file which is not open!";
+        cerr << "Bad Open!";
         exit(1);
     }
 
     Record temp;
-    // Flush the page data from which you are reading and load the last page to start appending records.
-    if (myPreferencePtr->pageBufferMode == READ ) {
+    if (dbProp->pageBufferMode == READ ) {
         if( myPage.getNumRecs() > 0){
             myPage.EmptyItOut();
         }
-        // open page for write
         myFile.GetPage(&myPage,getPageLocRewrite());
-        myPreferencePtr->curPage = getPageLocRewrite();
-        myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
-        myPreferencePtr->isFileReWrite = true;
+        dbProp->curPage = getPageLocRewrite();
+        dbProp->currentRecordPosition = myPage.getNumRecs();
+        dbProp->isFileReWrite = true;
     }
-    // set DBFile in WRITE Mode
-    myPreferencePtr->pageBufferMode = WRITE;
+    dbProp->pageBufferMode = WRITE;
     FILE *tableFile = fopen (loadpath, "r");
-    // while there are records, keep adding them to the DBFile. Reuse Add function.
     while(temp.SuckNextRecord(&f_schema, tableFile)==1) {
         Add(temp);
     }
@@ -181,56 +172,48 @@ void HeapHandler :: Load (Schema &f_schema, const char *loadpath) {
 
 int HeapHandler :: GetNext (Record &fetchme) {
     if (myFile.IsFileOpen()){
-        // Flush the Page Buffer if the WRITE mode was active.
-        if (myPreferencePtr->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
-            if(!myPreferencePtr->isFileWritten){
+        if (dbProp->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
+            if(!dbProp->isFileWritten){
                 myFile.AddPage(&myPage,getPageLocRewrite());
             }
-            //  Only Write Records if new records were added.
             myPage.EmptyItOut();
-            myPreferencePtr->curPage = myFile.GetLength();
-            myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
+            dbProp->curPage = myFile.GetLength();
+            dbProp->currentRecordPosition = myPage.getNumRecs();
             return 0;
         }
-        myPreferencePtr->pageBufferMode = READ;
-        // loop till the page is empty and if empty load the next page to read
+        dbProp->pageBufferMode = READ;
         if (!myPage.GetFirst(&fetchme)) {
-            // check if all records are read.
-            if (myPreferencePtr->curPage+1 >= myFile.GetLength()){
+            if (dbProp->curPage+1 >= myFile.GetLength()){
                return 0;
             }
             else{
-                // load new page and get its first record.
-                myFile.GetPage(&myPage,getPageLocRead(myPreferencePtr->pageBufferMode));
+                myFile.GetPage(&myPage,getPageLocRead(dbProp->pageBufferMode));
                 myPage.GetFirst(&fetchme);
-                myPreferencePtr->curPage++;
-                myPreferencePtr->currentRecordPosition = 0;
+                dbProp->curPage++;
+                dbProp->currentRecordPosition = 0;
             }
         }
         // increament counter for each read.
-        myPreferencePtr->currentRecordPosition++;
+        dbProp->currentRecordPosition++;
         return 1;
     }
 }
 
 int HeapHandler :: GetNext (Record &fetchme, CNF &cnf, Record &literal) {
-        // Flush the Page Buffer if the WRITE mode was active.
-        if (myPreferencePtr->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
-            //  Only Write Records if new records were added.
-            if(!myPreferencePtr->isFileWritten){
+        if (dbProp->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
+            if(!dbProp->isFileWritten){
                 myFile.AddPage(&myPage,getPageLocRewrite());
             }
             myPage.EmptyItOut();
-            myPreferencePtr->curPage = myFile.GetLength();
-            myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
+            dbProp->curPage = myFile.GetLength();
+            dbProp->currentRecordPosition = myPage.getNumRecs();
             return 0;
         }
         bool readFlag ;
         bool compareFlag;
-        // loop until all records are read or if some record maches the filter CNF
         do{
             readFlag = GetNext(fetchme);
-            compareFlag = myCompEng.Compare (&fetchme, &literal, &cnf);
+            compareFlag = mComparisonEngine.Compare (&fetchme, &literal, &cnf);
         }
         while(readFlag && !compareFlag);
         if(!readFlag){
@@ -242,41 +225,35 @@ int HeapHandler :: GetNext (Record &fetchme, CNF &cnf, Record &literal) {
 
 int HeapHandler :: Close () {
     if (!myFile.IsFileOpen()) {
-        cout << "trying to close a file which is not open!"<<endl;
+        cout << "Bad Close!"<<endl;
         return 0;
     }
-    if(myPreferencePtr->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
-            if(!myPreferencePtr->isFileWritten){
-                if (myPreferencePtr->isFileReWrite){
+    if(dbProp->pageBufferMode == WRITE && myPage.getNumRecs() > 0){
+            if(!dbProp->isFileWritten){
+                if (dbProp->isFileReWrite){
                     myFile.AddPage(&this->myPage,getPageLocRewrite());
-                    myPreferencePtr->isFileReWrite = false;
+                    dbProp->isFileReWrite = false;
                 }
                 else{
                     myFile.AddPage(&this->myPage,getPageLoc());
                 }
             }
-            myPreferencePtr->isFull = false;
-            myPreferencePtr->curPage = myFile.Close();
-            myPreferencePtr->isFileWritten = true;
-            myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
+            dbProp->isFull = false;
+            dbProp->curPage = myFile.Close();
+            dbProp->isFileWritten = true;
+            dbProp->currentRecordPosition = myPage.getNumRecs();
     }
     else{
-        if(myPreferencePtr->pageBufferMode == READ){
-            myPreferencePtr->curPage--;
+        if(dbProp->pageBufferMode == READ){
+            dbProp->curPage--;
         }
         myFile.Close();
     }
     return 1;
 }
 
-/*-----------------------------------END--------------------------------------------*/
-
-
-/*-----------------------------------------------------------------------------------*/
-//                   SORTED DBFILE CLASS FUNCTION DEFINATION
-/*-----------------------------------------------------------------------------------*/
 SortedFileHandler :: SortedFileHandler(DBProperties * preference){
-    myPreferencePtr = preference;
+    dbProp = preference;
     inputPipePtr = NULL;
     outputPipePtr = NULL;
     bigQPtr = NULL;
@@ -291,28 +268,26 @@ SortedFileHandler::~SortedFileHandler(){
 void SortedFileHandler::MoveFirst () {
     if (myFile.IsFileOpen()){
          // Flush the Page Buffer if the WRITE mode was active.
-        if(myPreferencePtr->pageBufferMode == WRITE && !myPreferencePtr->isFileWritten){
+        if(dbProp->pageBufferMode == WRITE && !dbProp->isFileWritten){
                   SortedInputFileMerge();
         }
         if( myPage.getNumRecs() > 0){
             myPage.EmptyItOut();
         }
-        myPreferencePtr->pageBufferMode = READ;
+        dbProp->pageBufferMode = READ;
         myFile.MoveToFirst();
-        myPreferencePtr->curPage = 0;
-        myPreferencePtr->currentRecordPosition = 0;
+        dbProp->curPage = 0;
+        dbProp->currentRecordPosition = 0;
         doBinarySearch=true;
     }
 }
 
 void SortedFileHandler :: Add(Record &addme){
     if (!myFile.IsFileOpen()){
-        cerr << "Trying to load a file which is not open!";
+        cerr << "Bad open!";
         exit(1);
     }
     
-    
-    // assign new pipe instance for input pipe if null
     if (inputPipePtr == NULL){
         inputPipePtr = new Pipe(10);
     }
@@ -320,12 +295,9 @@ void SortedFileHandler :: Add(Record &addme){
         outputPipePtr = new Pipe(10);
     }
     if(bigQPtr == NULL){
-        bigQPtr =  new BigQ(*(inputPipePtr), *(outputPipePtr), *(myPreferencePtr->orderMaker), myPreferencePtr->runLength);
+        bigQPtr =  new BigQ(*(inputPipePtr), *(outputPipePtr), *(dbProp->orderMaker), dbProp->runLength);
     }
-
-    
-     // Flush the page data from which you are reading and load the last page to start appending records.
-     if (myPreferencePtr->pageBufferMode == READ ) {
+    if (dbProp->pageBufferMode == READ ) {
         if( myPage.getNumRecs() > 0){
             myPage.EmptyItOut();
         }
@@ -337,29 +309,25 @@ void SortedFileHandler :: Add(Record &addme){
             outputPipePtr = new Pipe(10);
         }
         if(bigQPtr == NULL){
-            bigQPtr =  new BigQ(*(inputPipePtr), *(outputPipePtr), *(myPreferencePtr->orderMaker), myPreferencePtr->runLength);
+            bigQPtr =  new BigQ(*(inputPipePtr), *(outputPipePtr), *(dbProp->orderMaker), dbProp->runLength);
         }
     }
     
-    // set DBFile in write mode
-    myPreferencePtr->pageBufferMode = WRITE;
+    dbProp->pageBufferMode = WRITE;
     
-    // add record to input pipe
     inputPipePtr->Insert(&addme);
     
-    // set allrecords written as false
-    myPreferencePtr->isFileWritten=false;
+    dbProp->isFileWritten=false;
 }
 
 void SortedFileHandler :: Load(Schema &myschema, const char *loadpath){
     if (!myFile.IsFileOpen()){
-          cerr << "Trying to load a file which is not open!";
+          cerr << "Bad Open";
           exit(1);
       }
 
       Record temp;
-      // Flush the page data from which you are reading and load the last page to start appending records.
-       if (myPreferencePtr->pageBufferMode == READ ) {
+       if (dbProp->pageBufferMode == READ ) {
               if( myPage.getNumRecs() > 0){
                   myPage.EmptyItOut();
               }
@@ -369,10 +337,8 @@ void SortedFileHandler :: Load(Schema &myschema, const char *loadpath){
                }
       }
     
-      // set DBFile in WRITE Mode
-      myPreferencePtr->pageBufferMode = WRITE;
+      dbProp->pageBufferMode = WRITE;
       FILE *tableFile = fopen (loadpath, "r");
-      // while there are records, keep adding them to the DBFile. Reuse Add function.
       while(temp.SuckNextRecord(&myschema, tableFile)==1) {
           Add(temp);
       }
@@ -380,27 +346,23 @@ void SortedFileHandler :: Load(Schema &myschema, const char *loadpath){
 
 int SortedFileHandler :: GetNext(Record &fetchme){
     if (myFile.IsFileOpen()){
-        // Flush the Page Buffer if the WRITE mode was active.
-        if(myPreferencePtr->pageBufferMode == WRITE && !myPreferencePtr->isFileWritten){
+        if(dbProp->pageBufferMode == WRITE && !dbProp->isFileWritten){
                    SortedInputFileMerge();
         }
-        myPreferencePtr->pageBufferMode = READ;
-        // loop till the page is empty and if empty load the next page to read
+        dbProp->pageBufferMode = READ;
         if (!myPage.GetFirst(&fetchme)) {
-            // check if all records are read.
-            if (myPreferencePtr->curPage+1 >= myFile.GetLength()){
+            if (dbProp->curPage+1 >= myFile.GetLength()){
                return 0;
             }
             else{
-                // load new page and get its first record.
-                myFile.GetPage(&myPage,getPageLocRead(myPreferencePtr->pageBufferMode));
+                myFile.GetPage(&myPage,getPageLocRead(dbProp->pageBufferMode));
                 myPage.GetFirst(&fetchme);
-                myPreferencePtr->curPage++;
-                myPreferencePtr->currentRecordPosition = 0;
+                dbProp->curPage++;
+                dbProp->currentRecordPosition = 0;
             }
         }
         // increament counter for each read.
-        myPreferencePtr->currentRecordPosition++;
+        dbProp->currentRecordPosition++;
         return 1;
     }
 }
@@ -408,39 +370,31 @@ int SortedFileHandler :: GetNext(Record &fetchme){
 int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
     
     if (myFile.IsFileOpen()){
-        // Flush the Page Buffer if the WRITE mode was active.
-        if(myPreferencePtr->pageBufferMode == WRITE && !myPreferencePtr->isFileWritten){
+        if(dbProp->pageBufferMode == WRITE && !dbProp->isFileWritten){
             SortedInputFileMerge();
         }
         
-        // set page mode to READ
-        myPreferencePtr->pageBufferMode = READ;
+        dbProp->pageBufferMode = READ;
 
 
         if(doBinarySearch){
-            // read the current page for simplicity.
-            off_t startPage = !myPreferencePtr->curPage?0:myPreferencePtr->curPage-1;
-            // loop till the current page is fully read and checked record by record. Once the current page changes or the file ends break from the loop
+            off_t startPage = !dbProp->curPage?0:dbProp->curPage-1;
             while(GetNext(fetchme)){
-                if (startPage != myPreferencePtr->curPage-1){
+                if (startPage != dbProp->curPage-1){
                     break;
                 }
-                if(myCompEng.Compare(&fetchme, &literal, &cnf)){
+                if(mComparisonEngine.Compare(&fetchme, &literal, &cnf)){
                     return 1;
                 }
             }
-            // has the value of the next page{
-            if(myPreferencePtr->curPage == myFile.GetLength()-1){
-                startPage = myPreferencePtr->curPage;
+            if(dbProp->curPage == myFile.GetLength()-1){
+                startPage = dbProp->curPage;
             }
             else{
-                startPage= (myPreferencePtr->curPage-1);
+                startPage= (dbProp->curPage-1);
             }
             
-            // fetch the queryOrderMaker using the cnf given and the sort ordermaker stored in the preference.
-            queryOrderMaker= cnf.GetQueryOrderMaker(*myPreferencePtr->orderMaker);
-
-            // if the queryOrderMaker is available do a binary search to find the first matching record which is equal to literal using queryOrderMaker.
+            queryOrderMaker= cnf.GetQueryOrderMaker(*dbProp->orderMaker);
             if(queryOrderMaker!=NULL){
                 off_t endPage = (myFile.GetLength())-2;
                 int retstatus;
@@ -453,7 +407,7 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
                 if(retstatus){
                     doBinarySearch = false;
                     if (retstatus == 1){
-                        if(myCompEng.Compare(&fetchme, &literal, &cnf))
+                        if(mComparisonEngine.Compare(&fetchme, &literal, &cnf))
                             return 1;
                     }
 
@@ -464,10 +418,8 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
                 doBinarySearch = false;
             }
 
-            //If the first record of binary search gives a match we cannot be sure that the previous page is not a match. So go Back from the returned page from the binary search untill you find a page which doesnot match.
-            // remove page and make space for the correct page to be read in.
             myPage.EmptyItOut();
-            int previousPage = myPreferencePtr->curPage-1;
+            int previousPage = dbProp->curPage-1;
             Page prevPage;
             bool brkflag=false;
             while(previousPage>=startPage && queryOrderMaker!=NULL)
@@ -475,7 +427,7 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
                 myFile.GetPage(&prevPage,previousPage);
                 prevPage.GetFirst(&fetchme);
                 
-                if(myCompEng.Compare(&literal, queryOrderMaker, &fetchme, myPreferencePtr->orderMaker)==0)
+                if(mComparisonEngine.Compare(&literal, queryOrderMaker, &fetchme, dbProp->orderMaker)==0)
                 {
                     previousPage--;
                 }
@@ -483,13 +435,13 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
                 {
                     while(prevPage.GetFirst(&fetchme))
                     {
-                        if(myCompEng.Compare (&fetchme, &literal, &cnf))
+                        if(mComparisonEngine.Compare (&fetchme, &literal, &cnf))
                         {
                             char *bits = new (std::nothrow) char[PAGE_SIZE];
                             myPage.EmptyItOut();
                             prevPage.ToBinary (bits);
                             myPage.FromBinary(bits);
-                            myPreferencePtr->curPage = previousPage+1;
+                            dbProp->curPage = previousPage+1;
                             return 1;
                         }
                     }
@@ -497,31 +449,26 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
                 }
                 if(brkflag)
                 {
-                    myPreferencePtr->curPage = previousPage+1;
+                    dbProp->curPage = previousPage+1;
                     break;
                 }
             }
-            //spcal case
             if(brkflag==true)
             {
             }
 
         }
 
-        // Doing a linear Scan from the Record from where the seach stopped.
         while (GetNext(fetchme))
         {
-            // if queryOrderMaker exists and the literal is smaller than the fetched record stop the seach as all other records are greter incase of the search.
-            if (queryOrderMaker!=NULL && myCompEng.Compare(&literal,queryOrderMaker,&fetchme, myPreferencePtr->orderMaker) < 0){
+            if (queryOrderMaker!=NULL && mComparisonEngine.Compare(&literal,queryOrderMaker,&fetchme, dbProp->orderMaker) < 0){
                 return 0;
             }
-            // if the record passes the CNF compare return.
-            if(myCompEng.Compare (&fetchme, &literal, &cnf))
+            if(mComparisonEngine.Compare (&fetchme, &literal, &cnf))
             {
                 return 1;
             }
         }
-        // if nothing matches and we read all the file.
         return 0;
             
     }
@@ -529,20 +476,20 @@ int SortedFileHandler :: GetNext(Record &fetchme, CNF &cnf, Record &literal){
 
 int SortedFileHandler :: Close(){
     if (!myFile.IsFileOpen()) {
-        cout << "trying to close a file which is not open!"<<endl;
+        cout << "Bad close!"<<endl;
         return 0;
     }
     
-    if(myPreferencePtr->pageBufferMode == WRITE && !myPreferencePtr->isFileWritten){
+    if(dbProp->pageBufferMode == WRITE && !dbProp->isFileWritten){
             SortedInputFileMerge();
-            myPreferencePtr->isFull = false;
-            myPreferencePtr->curPage = myFile.Close();
-            myPreferencePtr->isFileWritten = true;
-            myPreferencePtr->currentRecordPosition = myPage.getNumRecs();
+            dbProp->isFull = false;
+            dbProp->curPage = myFile.Close();
+            dbProp->isFileWritten = true;
+            dbProp->currentRecordPosition = myPage.getNumRecs();
     }
     else{
-        if(myPreferencePtr->pageBufferMode == READ){
-            myPreferencePtr->curPage--;
+        if(dbProp->pageBufferMode == READ){
+            dbProp->curPage--;
         }
         myFile.Close();
     }
@@ -551,40 +498,32 @@ int SortedFileHandler :: Close(){
 }
 
 void SortedFileHandler::SortedInputFileMerge(){
-    // setup for new file
-    string fileName(myPreferencePtr->propFilePath);
+    string fileName(dbProp->propFilePath);
     string newFileName = fileName.substr(0,fileName.find_last_of('.'))+".nbin";
     char* new_f_path = new char[newFileName.length()+1];
     strcpy(new_f_path, newFileName.c_str());
     
-    // open new file in which the data will be written.
     newFile.Open(0,new_f_path);
     Page page;
     int newFilePageCounter = 0;
     
-    // shut down input pipe;
     inputPipePtr->ShutDown();
     
-    // flush the read buffer
     if(myPage.getNumRecs() > 0){
         myPage.EmptyItOut();
     }
     
-    // page counts;
     int totalPages = myFile.GetLength()-1;
     int currentPage = 0;
-    // set flags to initiate merge
     bool fileReadFlag = true;
     bool outputPipeReadFlag = true;
     
     
-    // merge data from file and output pipe
     bool getNextFileRecord = true;
     bool getNextOutputPipeRecord = true;
     Record * fileRecordptr = NULL;
     Record * outputPipeRecordPtr = NULL;
     
-    // loop until data is there in either the pipe or file.
     while(fileReadFlag || outputPipeReadFlag){
         
         if (getNextOutputPipeRecord){
@@ -610,11 +549,10 @@ void SortedFileHandler::SortedInputFileMerge(){
             }
         }
         
-        // select record to be written
         Record * writeRecordPtr;
         bool consumeFlag = false;
         if(fileReadFlag and outputPipeReadFlag){
-            if (myCompEng.Compare(fileRecordptr,outputPipeRecordPtr,myPreferencePtr->orderMaker)<=0){
+            if (mComparisonEngine.Compare(fileRecordptr,outputPipeRecordPtr,dbProp->orderMaker)<=0){
                 writeRecordPtr = fileRecordptr;
                 fileRecordptr=NULL;
                 consumeFlag=true;
@@ -643,15 +581,12 @@ void SortedFileHandler::SortedInputFileMerge(){
         
         
         if(consumeFlag && !page.Append(writeRecordPtr)) {
-            // Add the page to new File
             newFile.AddPage(&page,newFilePageCounter);
             newFilePageCounter++;
             
-            // empty page if not consumed
             if(page.getNumRecs() > 0){
                 page.EmptyItOut();
             }
-            // add again to page
             page.Append(writeRecordPtr);
         }
         if(writeRecordPtr!=NULL){
@@ -659,15 +594,12 @@ void SortedFileHandler::SortedInputFileMerge(){
         }
     }
     
-    // write the last page which might not be full.
     if (page.getNumRecs() > 0){
         newFile.AddPage(&page,newFilePageCounter);
     }
     
-    // set that all records in the input pipe buffer are written
-    myPreferencePtr->isFileWritten=true;
+    dbProp->isFileWritten=true;
     
-    // clean up the input pipe, output pipe and bigQ after use.
     delete inputPipePtr;
     delete outputPipePtr;
     delete bigQPtr;
@@ -675,7 +607,6 @@ void SortedFileHandler::SortedInputFileMerge(){
     outputPipePtr = NULL;
     bigQPtr = NULL;
     
-    // close the files and swap the files
     myFile.Close();
     newFile.Close();
     
@@ -683,15 +614,12 @@ void SortedFileHandler::SortedInputFileMerge(){
     char* old_f_path = new char[oldFileName.length()+1];
     strcpy(old_f_path, oldFileName.c_str());
     
-    // deleting old file
-    if(Utilities::checkfileExist(old_f_path)) {
+    if(Utilities::isFileExists(old_f_path)) {
         if( remove(old_f_path) != 0 )
-        cerr<< "Error deleting file" ;
+        cerr<< "Error" ;
     }
-    // renaming new file to old file.
     rename(new_f_path,old_f_path);
     
-    //opening the new file.
     myFile.Open(1,old_f_path);
 }
 
@@ -703,10 +631,10 @@ int SortedFileHandler::BinarySearch(Record &fetchme, Record &literal,off_t low, 
            else
                   myFile.GetPage(&myPage,0);
            myPage.GetFirst(&fetchme);
-           int comparisonResult = myCompEng.Compare(&literal, queryOrderMaker, &fetchme, myPreferencePtr->orderMaker);
+           int comparisonResult = mComparisonEngine.Compare(&literal, queryOrderMaker, &fetchme, dbProp->orderMaker);
 
            if (comparisonResult == 0 ){
-               myPreferencePtr->curPage = mid+1;
+               dbProp->curPage = mid+1;
                return 2;
            }
            else if (comparisonResult<0){
@@ -714,12 +642,12 @@ int SortedFileHandler::BinarySearch(Record &fetchme, Record &literal,off_t low, 
            }
            if (comparisonResult > 0){
                 while(myPage.GetFirst(&fetchme)){
-                    int comparisonResultInsidePage = myCompEng.Compare(&literal, queryOrderMaker,&fetchme, myPreferencePtr->orderMaker);
+                    int comparisonResultInsidePage = mComparisonEngine.Compare(&literal, queryOrderMaker,&fetchme, dbProp->orderMaker);
                     if(comparisonResultInsidePage<0){
                         return 0;
                     }
                     else if(comparisonResultInsidePage == 0 ){
-                        myPreferencePtr->curPage = mid+1;
+                        dbProp->curPage = mid+1;
                         return 1;
                     }
                 }
@@ -731,13 +659,6 @@ int SortedFileHandler::BinarySearch(Record &fetchme, Record &literal,off_t low, 
        return 0;
 }
 
-/*-----------------------------------END--------------------------------------------*/
-
-
-
-/*-----------------------------------------------------------------------------------*/
-//                   DBFILE CLASS FUNCTION DEFINATION
-/*-----------------------------------------------------------------------------------*/
 
 DBFile::DBFile () {
     curFilePt = NULL;
@@ -749,19 +670,16 @@ DBFile::~DBFile () {
 }
 
 int DBFile::Create (const char *f_path, fType f_type, void *startup) {
-    if (Utilities::checkfileExist(f_path)) {
-        cout << "file you are about to create already exists!"<<endl;
+    if (Utilities::isFileExists(f_path)) {
+        cout << "already exists!"<<endl;
         return 0;
     }
-    // changing .bin extension to .pref for storing preferences.
     string s(f_path);
     string news = s.substr(0,s.find_last_of('.'))+".pref";
     char* finalString = new char[news.length()+1];
     strcpy(finalString, news.c_str());
-    // loading preferences
     loadProperties(finalString,f_type);
     
-    // check if the file type is correct
     if (f_type == heap){
         curFilePt = new HeapHandler(&dbProperties);
         curFilePt->Create((char *)f_path,f_type,startup);
@@ -777,30 +695,26 @@ int DBFile::Create (const char *f_path, fType f_type, void *startup) {
 
 int DBFile::Open (const char *f_path) {
 
-    if (!Utilities::checkfileExist(f_path)) {
-        cout << "Trying to open a file which is not created yet!"<<endl;
+    if (!Utilities::isFileExists(f_path)) {
+        cout << "Bad Open!"<<endl;
         return 0;
     }
 
-    // changing .bin extension to .pref for storing preferences.
     string s(f_path);
     string news = s.substr(0,s.find_last_of('.'))+".pref";
     
     char* finalString = new char[news.length()+1];
     strcpy(finalString, news.c_str());
 
-    // loading preferences
     loadProperties(finalString,undefined);
     
     
-    // check if the file type is correct
     if (dbProperties.fileType == heap){
         curFilePt = new HeapHandler(&dbProperties);
     }
     else if(dbProperties.fileType == sorted){
         curFilePt = new SortedFileHandler(&dbProperties);
     }
-    // opening file using given path
     return curFilePt->Open((char *)f_path);
 }
 
@@ -851,7 +765,7 @@ int DBFile::GetNext (Record &fetchme, CNF &cnf, Record &literal) {
 
 void DBFile::loadProperties(char * newFilePath,fType f_type) {
     ifstream file;
-    if (Utilities::checkfileExist(newFilePath)) {
+    if (Utilities::isFileExists(newFilePath)) {
         file.open(newFilePath,ios::in);
         if(!file){
             cerr<<"Error in opening file..";

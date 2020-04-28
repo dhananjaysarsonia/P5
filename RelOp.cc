@@ -140,7 +140,7 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
 	ComparisonEngine ce; Record r, *trl, *trr; int c=0, lc=0, rc=0; Page *lp, *rp;
 
 	DBFile dbf;
-    char * fileName = Utilities::newRandomFileName(".bin");
+    char * fileName = Utilities::newTempFile(".bin");
     
     dbf.Create(fileName, heap, NULL);
 	while(inPipeR->Remove(&r)) {
@@ -253,7 +253,7 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
     
     dbf.Close();
     
-    if(Utilities::checkfileExist(fileName)) {
+    if(Utilities::isFileExists(fileName)) {
         if( remove(fileName) != 0 )
         cerr<< "Error deleting file" ;
     }
@@ -262,7 +262,7 @@ void Join::blockNestedJoin(Record lr,Record rr, Record m, OrderMaker &lom, Order
     char * finalString = new char[news.length()+1];
     strcpy(finalString, news.c_str());
     
-    if(Utilities::checkfileExist(finalString)) {
+    if(Utilities::isFileExists(finalString)) {
         if( remove(finalString) != 0 )
         cerr<< "Error deleting file" ;
     }

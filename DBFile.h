@@ -1,3 +1,11 @@
+//
+//  DBfile.h
+//  DBIp22final
+//
+//  Created by Dhananjay Sarsonia on 2/1/20.
+//  Copyright © 2020 Dhananjay Sarsonia and Arushi Singhvi All rights reserved.
+//
+
 #ifndef DBFILE_H
 #define DBFILE_H
 
@@ -29,41 +37,24 @@ typedef struct {
     int l;
 } SortedStartUp;
 
-// class to take care of meta data for each table
+// saves metadata for the tables
 class DBProperties{
 public:
-    // Indicator for type of DBFile
+    // db file type
     fType fileType;
-    // Variable to store the state in which the page buffer is present;
-    // Possible values : WRITE,READ and IDLE(default state when the file is just created )
+
     DbBufferMode pageBufferMode;
-
-    // Variable to track Current Page from which we need to READ or WRITE to with the file. May have different value according to the mode.
     off_t curPage;
-
-    // Variable to trac the Current record during the READ and WRITE to the file.
     int currentRecordPosition;
-
-    // Boolean to check if the page isFull or not.
     bool isFull;
-
-    //  Variable to store the file path  to the preference file
     char * propFilePath;
 
-    // Boolean indicating if all the records in the page have been written in the file(disk) or not.
     bool isFileWritten;
 
-    // Boolean indicating if the page needs to be rewritten or not.
     bool isFileReWrite;
     
-    // OrderMaker as an Input For Sorted File.
-    
-//    char orderMakerBits[sizeof(OrderMaker)];
-    
-    // OrderMaker as an Input For Sorted File.
     OrderMaker * orderMaker;
     
-    // Run Length For Sorting
     int runLength;
 
 };
@@ -71,14 +62,10 @@ public:
 
 class FileHandler{
 protected:
-    //  Used to read & write page to the disk.
     File myFile;
-    //  Used as a buffer to read and write data.
     Page myPage;
-    // Pointer to preference file
-    DBProperties * myPreferencePtr;
-    //  Used to keep track of the state.
-    ComparisonEngine myCompEng;
+    DBProperties * dbProp;
+    ComparisonEngine mComparisonEngine;
 public:
     FileHandler();
     int getPageLoc();
@@ -87,7 +74,6 @@ public:
     void Create (char * f_path,fType f_type, void *startup);
     int Open (char * f_path);
     
-    //  virtual function
     virtual ~FileHandler();
     virtual void MoveFirst ();
     virtual void Add (Record &addme);
@@ -133,46 +119,24 @@ public:
 };
 
 
-// stub DBFile header..replace it with your own DBFile.h
 
 class DBFile {
 private:
-//  Generic DBFile Pointer
     FileHandler * curFilePt;
-//  Used to keep track of the state.
     DBProperties dbProperties;
 public:
-	// Constructor and Destructor
 	DBFile ();
     ~DBFile ();
-	
-	// Function to load preference from the disk. This is needed to make read and writes persistent.
-	// @input - the file path of the table to be created or opened. Each tbl file has a corresponding .pref
-	void loadProperties(char*f_path,fType f_type);
-
-	// Function to dumpn the preference to the disk. This is needed to make read and writes persistent.
+    void loadProperties(char*f_path,fType f_type);
 	void deleteProperties();
-
 	void Load (Schema &myschema, const char *loadpath);
 	bool isFileOpen;
-	
-
 	void MoveFirst ();
-
 	void Add (Record &addme);
-
-
 	int GetNext (Record &fetchme);
-
-
 	int GetNext (Record &fetchme, CNF &cnf, Record &literal);
-
-
     int Create (const char *fpath, fType file_type, void *startup);
-
-
     int Open (const char *fpath);
-
     int Close ();
 };
 #endif

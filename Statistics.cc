@@ -182,7 +182,7 @@ double Statistics::Estimate(struct AndList *tree, char **relationNames, int numT
 {
     double et=1;
     map<string,long> uniqueValueList;
-    if(!checkParseTreeAndPartition(tree,relationNames,numToJoin,uniqueValueList))
+    if(!parseTreePartition(tree,relationNames,numToJoin,uniqueValueList))
     {
         cout<<"\n invalid parameters";
         return -1.0;
@@ -260,22 +260,18 @@ double Statistics::EstimateTuples(struct OrList *orList, map<string,long> &uniqu
     return (1.0-selectivity);
 }
 
-/*
- *  Function checks whether given attributes belong to relations in relation list or not
-*/
-bool Statistics::CheckForAttribute(char *v,char *relationNames[], int numberOfJoinAttributes,map<string,long> &uniqueValueList)
+
+bool Statistics::checkAttributes(char *v,char *relationNames[], int numberOfJoinAttributes,map<string,long> &uniqueValueList)
 {
     int i=0;
     while(i<numberOfJoinAttributes)
     {
         map<string,RelStats*>::iterator itr=staMap.find(relationNames[i]);
-        // if stats are not empty
         if(itr!=staMap.end())
         {   
             string relation = string(v);
             if(itr->second->GetRelationAttributes()->find(relation)!=itr->second->GetRelationAttributes()->end())
             {
-                // update value in uniqueValueList
                 uniqueValueList[relation]=itr->second->GetRelationAttributes()->find(relation)->second;
                 return true;
             }
@@ -292,7 +288,7 @@ bool Statistics::CheckForAttribute(char *v,char *relationNames[], int numberOfJo
 
 
 
-bool Statistics::checkParseTreeAndPartition(struct AndList *tree, char *relationNames[], int numberOfAttributesJoin,map<string,long> &uniqueValueList)
+bool Statistics::parseTreePartition(struct AndList *tree, char *relationNames[], int numberOfAttributesJoin,map<string,long> &uniqueValueList)
 {
     bool returnValue=true;
 
@@ -303,29 +299,25 @@ bool Statistics::checkParseTreeAndPartition(struct AndList *tree, char *relation
         {
             struct ComparisonOp *cmpPtr = orListTop->left;
 
-            if(!CheckForAttribute(cmpPtr->left->value,relationNames,numberOfAttributesJoin,uniqueValueList)
+            if(!checkAttributes(cmpPtr->left->value,relationNames,numberOfAttributesJoin,uniqueValueList)
                 && cmpPtr->left->code==NAME 
                 && cmpPtr->code==STRING) {
                 cout<<"\n"<< cmpPtr->left->value<<"Not Exist";
                 returnValue=false;
             }
 
-            if(!CheckForAttribute(cmpPtr->right->value,relationNames,numberOfAttributesJoin,uniqueValueList)
+            if(!checkAttributes(cmpPtr->right->value,relationNames,numberOfAttributesJoin,uniqueValueList)
                 && cmpPtr->right->code==NAME 
                 && cmpPtr->code==STRING) {
                 returnValue=false;
             }
-            // now move to the right OR after we've seen the left one and keep moving until the end
             orListTop=orListTop->rightOr;
         }
-        // after the OR parsing is complete, we'll now go to the right OR until the ANDs end
         tree=tree->rightAnd;
     }
 
-    // if false, return
     if(!returnValue) return returnValue;
 
-    // for number of
     map<string,int> tbl;
     for(int i=0;i<numberOfAttributesJoin;i++)
     {

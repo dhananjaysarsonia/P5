@@ -12,17 +12,16 @@ class Utilities {
     public:
     
         // check if file exists already at the given file path
-        static int checkfileExist (const std::string& name) {
+        static int isFileExists (const std::string& name) {
             if (FILE *file = fopen(name.c_str(), "r")) { fclose(file); return 1; }  
             else { return 0; }   
         }
 
-        // get's a unique random int counter value
-        static int getNextCounter () {
+        static int getUniqueCounter () {
             ifstream ifile;
             ofstream ofile;
             int counter = 0;
-            if (checkfileExist("counter.txt")){
+            if (isFileExists("counter.txt")){
                 ifile.open("counter.txt",ios::in);
                 ifile.read((char*)&counter,sizeof(int));
                 ifile.close();
@@ -34,10 +33,9 @@ class Utilities {
             return counter;
         }   
 
-        // returns a char* new random file name with given extension
-        static char* newRandomFileName(char* extension) {
+        static char* newTempFile(char* extension) {
             if ((extension == NULL) || (extension[0] == '\0')) { extension=""; }
-            string str("temp_" + to_string(Utilities::getNextCounter()) + extension);
+            string str("temp_" + to_string(Utilities::getUniqueCounter()) + extension);
             char *cstr = new char[str.length() + 1];
             strcpy(cstr, str.c_str());
             return cstr;
