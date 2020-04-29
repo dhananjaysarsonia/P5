@@ -8,13 +8,13 @@ tag = -n
 endif
 
 main: y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o
-	$(CC) -o main y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o -ll -lpthread
+	$(CC) -o main y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o main.o -lfl -lpthread
 
 
 gtest: y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o
-	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o -ll -lpthread
-#	
-#	
+	$(CC) -o gtest y.tab.o lex.yy.o Record.o Schema.o Comparison.o ComparisonEngine.o Function.o Pipe.o BigQ.o File.o DBFile.o RelOp.o Statistics.o gtest-all.o gtest.o -lfl -lpthread
+#
+#
 	
 #gtest-all.o: gtest-all.cc
 #	$(CC)  -g -DGTEST_HAS_PTHREAD=0 -c gtest-all.cc

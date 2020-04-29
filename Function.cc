@@ -9,13 +9,10 @@ Function :: Function () {
 
 Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySchema) {
 
-	// different cases; in the first case, simple, unary operation
 	if (parseTree->right == 0 && parseTree->leftOperand == 0 && parseTree->code == '-') {
 
-		// figure out the operations on the subtree
 		Type myType = RecursivelyBuild (parseTree->leftOperator, mySchema);
 
-		// and do the operation
 		if (myType == Int) {
 			opList[numOps].myOp = IntUnaryMinus;
 			numOps++;
@@ -31,30 +28,23 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 			exit (1);
 		}
 
-	// in this case, we have either a literal value or a variable value, so do a push
 	} else if (parseTree->leftOperator == 0 && parseTree->right == 0) {
 		
-		// now, there are two sub-cases.  In the first case, the value is from the
-		// record that we are operating over, so we will find it in the schema
 		if (parseTree->leftOperand->code == NAME) {
 
-			// first, make sure that the attribute is there
 			int myNum = mySchema.Find (parseTree->leftOperand->value);
 			if (myNum == -1) {
 				cerr << "Error!  Attribute in arithmatic expression was not found.\n";
 				exit (1);
 			}
 
-			// it is there, so get the type
 			int myType = mySchema.FindType (parseTree->leftOperand->value);
 
-			// see if it is a string
 			if (myType == String) {
 				cerr << "Error!  No arithmatic ops over strings are allowed.\n";
 				exit (1);
 			}
 
-			// everything is OK, so encode the instructions for loading from the rec
 			if (myType == Int) {
 
 				opList[numOps].myOp = PushInt;
@@ -63,7 +53,6 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 				numOps++;	
 				return Int;
 				
-			// got a double
 			} else {
 
 				opList[numOps].myOp = PushDouble;
@@ -73,10 +62,8 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 				return Double;
 			}
 				
-		// in this case, we have a literal value
 		} else if (parseTree->leftOperand->code == INT) {
 
-				// we were given a literal integer value!
 				opList[numOps].myOp = PushInt;
 				opList[numOps].recInput = -1;
 				opList[numOps].litInput = (void *) (new int);
@@ -94,23 +81,14 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 				return Double;
 		}
 
-	// now, we have dealt with the case of a unary negative and with an actual value
-	// from the record or from the literal... last is to deal with an aritmatic op
 	}  else {
 
-		// so first, we recursively handle the left; this should give us the left
-		// side's value, sitting on top of the stack
 		Type myTypeLeft = RecursivelyBuild (parseTree->leftOperator, mySchema);
 
-		// now we recursively handle the right
 		Type myTypeRight = RecursivelyBuild (parseTree->right, mySchema);
 
-		// the two values to be operated over are sitting on the stack.  So next we
-		// do the operation.  But there are potentially some typing issues.  If both
-		// are integers, then we do an integer operation 
 		if (myTypeLeft == Int && myTypeRight == Int) {
 			
-			// integer operation!  So no casting required
 
 			if (parseTree->code == '+') {
 				opList[numOps].myOp = IntPlus;
@@ -139,24 +117,18 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 
 		}
 
-		// if we got here, then at least one of the two is a double, so
-		// the integer must be cast as appropriate
 		if (myTypeLeft == Int) {
 		
-			// the left operand is an ant and needs to be cast
 			opList[numOps].myOp = ToDouble2Down;
 			numOps++;	
 		}	
 
 		if (myTypeRight == Int) {
 
-                        // the left operand is an ant and needs to be cast
                         opList[numOps].myOp = ToDouble;
                         numOps++;
                 }
 
-		// now, we know that the top two items on the stach are doubles,
-		// so we go ahead and do the math
 		if (parseTree->code == '+') {
 			opList[numOps].myOp = DblPlus;
 			numOps++;
@@ -186,13 +158,10 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 
 void Function :: GrowFromParseTree (struct FuncOperator *parseTree, Schema &mySchema) {
 
-	// zero out the list of operrations
 	numOps = 0;
 
-	// now recursively build the list
 	Type resType = RecursivelyBuild (parseTree, mySchema);
 
-	// remember if we get back an interger or if we get a double
 	if (resType == Int)
 		returnsInt = 1;
 	else
@@ -213,12 +182,9 @@ void Function :: Print (Schema* schema) {
             case PushInt:
                 lastPos++;
 
-                // See if we need attribute from schema
-                // see if we need to get the int from the record
                 if (opList[i].recInput >= 0) {
                     stack[lastPos] = string(atts[opList[i].recInput].name);
 
-                    // or from the literal value
                 } else {
                     stack[lastPos] = to_string(*((int *) opList[i].litInput));
                 }
@@ -228,11 +194,9 @@ void Function :: Print (Schema* schema) {
             case PushDouble:
                 lastPos++;
 
-                // see if we need to get the int from the record
                 if (opList[i].recInput >= 0) {
                     stack[lastPos] = string(atts[opList[i].recInput].name);
 
-                    // or from the literal value
                 } else {
                     stack[lastPos] = to_string(*((double *) opList[i].litInput));
                 }
@@ -274,8 +238,6 @@ void Function :: Print (Schema* schema) {
         }
     }
 
-    // now, we are just about done.  First we have a sanity check to make sure
-    // that exactly one value is on the stack!
     if (lastPos != 0) {
         cerr << "During print function, we did not have exactly one value ";
         cerr << "left on the stack.  BAD!\n";
@@ -287,11 +249,7 @@ void Function :: Print (Schema* schema) {
 
 Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
 
-	// this is rather simple; we just loop through and apply all of the 
-	// operations that are specified during the function
 
-	// this is the stack that holds the intermediate results from the 
-	// function
 	double stack[MAX_DEPTH];
 	double *lastPos = stack - 1;
 	char *bits = toMe.bits;
@@ -304,12 +262,10 @@ Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
 
 				lastPos++;	
 
-				// see if we need to get the int from the record
 				if (opList[i].recInput >= 0) {
 					int pointer = ((int *) toMe.bits)[opList[i].recInput + 1];	
 					*((int *) lastPos) = *((int *) &(bits[pointer]));
 
-				// or from the literal value
 				} else {
 					*((int *) lastPos) = *((int *) opList[i].litInput);
 				}
@@ -320,7 +276,6 @@ Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
 
 				lastPos++;	
 
-				// see if we need to get the int from the record
 				if (opList[i].recInput >= 0) {
 					int pointer = ((int *) toMe.bits)[opList[i].recInput + 1];	
 					*((double *) lastPos) = *((double *) &(bits[pointer]));
@@ -416,8 +371,6 @@ Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
 				
 	}
 
-	// now, we are just about done.  First we have a sanity check to make sure
-	// that exactly one value is on the stack!
 	if (lastPos != stack) {
 
 		cerr << "During function evaluation, we did not have exactly one value ";
@@ -426,7 +379,6 @@ Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
 
 	}
 
-	// got here, so we are good to go; just return the final value
 	if (returnsInt) {
 		intResult = *((int *) lastPos);
 		return Int;

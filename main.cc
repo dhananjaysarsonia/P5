@@ -18,14 +18,32 @@
 #include "NodeHandler.h"
 typedef map<string, AndList> booleanMap;
 typedef map<string,bool> Loopkup;
-
-
 extern "C" {
 int yyparse (void);   // defined in y.tab.c
 }
 
 using namespace std;
 
+//
+
+//extern struct NameList *groupingAtts;
+//extern struct NameList *attsToSelect;
+//extern int distinctAtts;
+//extern int distinctFunc;
+//
+//extern int queryType;  // 1 for SELECT, 2 for CREATE, 3 for DROP,
+//// 4 for INSERT, 5 for SET, 6 for EXIT
+//// extern int outputType; // 0 for NONE, 1 for STDOUT, 2 for file output
+//
+//extern char *outputVar;
+//
+//extern char *tableName;
+//extern char *fileToInsert;
+//
+//extern struct AttrList *attsToCreate;
+//extern struct NameList *attsToSort;
+
+//
 extern struct FuncOperator *finalFunction;
 extern struct TableList *tables;
 extern struct AndList *boolean;
@@ -66,6 +84,40 @@ const int npart = 200000;
 const int npartsupp = 800000;
 const int nregion = 5;
 const int nsupplier = 10000;
+const int SELECT_OPTION = 1;
+const int CREATE_OPTION = 2;
+const int DROP_OPTION = 3;
+const int INSERT_OPTION = 4;
+
+
+
+
+//
+//yyparse ();
+//     switch (queryType) {
+//         case 1:
+//         {
+//             SelectQuery();
+//             break;
+//         }
+//
+//         case 2:{
+//             CreateQuery();
+//             break;
+//         }
+//
+//         case 3:{
+//             DropQuery();
+//
+//             break;
+//         }
+//         case 4:
+//         {
+//             InsertQuery();
+//
+//             break;
+//         }
+//
 
 
 static int pidBuffer = 0;
@@ -95,7 +147,6 @@ void initSchemaMap (SchemaMap &map) {
         if (strcmp (str, "BEGIN") == 0) {
             
             ifs.getline (str, 100);
-            //			cout << str << endl;
             map[string(str)] = Schema (catalog, str);
             
         }
@@ -107,45 +158,45 @@ void initSchemaMap (SchemaMap &map) {
 }
 
 booleanMap JoinFilter(AndList *parseTree) {
-    booleanMap b;
-    string delimiter = ".";
-    vector <string> fullkey;
+    booleanMap boolMap;
+    string del = ".";
+    vector <string> fKey;
     AndList * head = NULL;
     AndList * root = NULL;
     
-    for (int whichAnd = 0; 1; whichAnd++, parseTree = parseTree->rightAnd) {
+    for (int andIndex = 0; 1; andIndex++, parseTree = parseTree->rightAnd) {
         
         if (parseTree == NULL) {
             // done
             break;
         }
         
-        struct OrList *myOr = parseTree->left;
-        for (int whichOr = 0; 1; whichOr++, myOr = myOr->rightOr) {
+        struct OrList *orList = parseTree->left;
+        for (int whichOr = 0; 1; whichOr++, orList = orList->rightOr) {
             
-            if (myOr == NULL) {
+            if (orList == NULL) {
                 break;
             }
             
             
             
-            Type typeLeft;
-            Type typeRight;
-            if (myOr->left->left->code == NAME) {
-                if (myOr->left->right->code == NAME)
+            Type l;
+            Type r;
+            if (orList->left->left->code == NAME) {
+                if (orList->left->right->code == NAME)
                 {
                     string key1,key2;
                     
-                    string lts = myOr->left->left->value;
-                    string pushlts = lts.substr(0, lts.find(delimiter));
+                    string lts = orList->left->left->value;
+                    string pushlts = lts.substr(0, lts.find(del));
                     
-                    string rts = myOr->left->right->value;
-                    string pushrts = rts.substr(0, rts.find(delimiter));
+                    string rts = orList->left->right->value;
+                    string pushrts = rts.substr(0, rts.find(del));
                     
                     key1= pushlts+pushrts;
                     key2 = pushrts+pushlts;
-                    fullkey.push_back(pushlts);
-                    fullkey.push_back(pushrts);
+                    fKey.push_back(pushlts);
+                    fKey.push_back(pushrts);
                     
                     AndList pushAndList;
                     pushAndList.left=parseTree->left;
@@ -164,13 +215,13 @@ booleanMap JoinFilter(AndList *parseTree) {
                         root->rightAnd=NULL;
                     }
                     
-                    b[key1] = pushAndList;
-                    b[key2] = pushAndList;
+                    boolMap[key1] = pushAndList;
+                    boolMap[key2] = pushAndList;
                     
                 }
-                else if (myOr->left->right->code == STRING  ||
-                         myOr->left->right->code == INT      ||
-                         myOr->left->right->code == DOUBLE)
+                else if (orList->left->right->code == STRING  ||
+                         orList->left->right->code == INT      ||
+                         orList->left->right->code == DOUBLE)
                 {
                     continue;
                 }
@@ -180,9 +231,9 @@ booleanMap JoinFilter(AndList *parseTree) {
                     //return -1;
                 }
             }
-            else if (myOr->left->left->code == STRING   ||
-                     myOr->left->left->code == INT       ||
-                     myOr->left->left->code == DOUBLE)
+            else if (orList->left->left->code == STRING   ||
+                     orList->left->left->code == INT       ||
+                     orList->left->left->code == DOUBLE)
             {
                 continue;
             }
@@ -193,20 +244,19 @@ booleanMap JoinFilter(AndList *parseTree) {
                 //return -1;
             }
             
-            // now we check to make sure that there was not a type mismatch
-            if (typeLeft != typeRight) {
+            if (l != r) {
                 cerr<< "Mismatch error";
             }
         }
     }
     
-    if (fullkey.size()>0){
+    if (fKey.size()>0){
         Loopkup h;
         vector <string> keyf;
-        for (int k = 0; k<fullkey.size();k++){
-            if (h.find(fullkey[k]) == h.end()){
-                keyf.push_back(fullkey[k]);
-                h[fullkey[k]]=true;
+        for (int k = 0; k<fKey.size();k++){
+            if (h.find(fKey[k]) == h.end()){
+                keyf.push_back(fKey[k]);
+                h[fKey[k]]=true;
             }
         }
         
@@ -217,10 +267,10 @@ booleanMap JoinFilter(AndList *parseTree) {
             for (int k = 0; k<keyf.size();k++){
                 str+=keyf[k];
             }
-            b[str] = *head;
+            boolMap[str] = *head;
         }while(next_permutation(keyf.begin(),keyf.end()));
     }
-    return b;
+    return boolMap;
 }
 
 void initStatistics (Statistics &s) {
@@ -448,11 +498,11 @@ void CopyNameList (NameList *nameList, vector<string> &names) {
     
 }
 
-void DeleteNameList (NameList *nameList) {
+void DeleteInsertedList (NameList *nameList) {
     
     if (nameList) {
         
-        DeleteNameList (nameList->next);
+        DeleteInsertedList (nameList->next);
         
         delete[] nameList->name;
         
@@ -562,9 +612,9 @@ void DeleteAttrList (AttrList *attrList) {
 }
 
 void cleanup () {
-    DeleteNameList (groupingAtts);
-    DeleteNameList (attsToSelect);
-    DeleteNameList (attsToSort);
+    DeleteInsertedList (groupingAtts);
+    DeleteInsertedList (attsToSelect);
+    DeleteInsertedList (attsToSort);
     DeleteAttrList (attsToCreate);
     //    DeleteFunction (finalFunction);
     DeleteTableList (tables);
@@ -587,135 +637,132 @@ void cleanup () {
 
 void SelectQuery(){
     
-    vector<char *> tableNames;
-    vector<char *> joinOrder;
+    vector<char *> tbNames;
+    vector<char *> jOrder;
     vector<char *> buffer (2);
     
-    AliaseMap aliaseMap;
-    SchemaMap schemaMap;
-    Statistics s;
+    AliaseMap aliasMapping;
+    SchemaMap schemaMapping;
+    Statistics statist;
     
     
-    initSchemaMap (schemaMap);
-    initStatistics (s);
+    initSchemaMap (schemaMapping);
+    initStatistics (statist);
     
-    CopyTablesNamesAndAliases (tables, s, tableNames, aliaseMap);
+    CopyTablesNamesAndAliases (tables, statist, tbNames, aliasMapping);
     
+    sort (tbNames.begin (), tbNames.end ());
     
-    
-    
-    sort (tableNames.begin (), tableNames.end ());
-    
-    int min_join_cost = INT_MAX;
-    int curr_join_cost = 0;
-    booleanMap b = JoinFilter(boolean);
+    int minCost = INT_MAX;
+    int curCost = 0;
+    booleanMap filteredMap = JoinFilter(boolean);
     
     do {
-        Statistics temp (s);
-        auto iter = tableNames.begin ();
-        int biter = 0;
-        buffer[biter] = *iter;
-        iter++;
-        biter++;
+        Statistics tempStat (statist);
+        auto itemName = tbNames.begin ();
+        int bufIndex = 0;
+        buffer[bufIndex] = *itemName;
+        itemName++;
+        bufIndex++;
         
-        while (iter != tableNames.end ()) {
+        while (itemName != tbNames.end ()) {
             
-            buffer[biter] =  *iter ;
+            buffer[bufIndex] =  *itemName ;
             string key = "";
-            for ( int c = 0; c<=biter;c++){
+            for ( int c = 0; c<=bufIndex;c++){
                 key += string(buffer[c]);
             }
             
-            if (b.find(key) == b.end()) {
+            if (filteredMap.find(key) == filteredMap.end()) {
                 break;
             }
             
-            curr_join_cost += temp.Estimate (&b[key], &buffer[0], 2);
-            temp.Apply (&b[key], &buffer[0], 2);
-            if (curr_join_cost <= 0 || curr_join_cost > min_join_cost) {
+            curCost += tempStat.Estimate (&filteredMap[key], &buffer[0], 2);
+            tempStat.Apply (&filteredMap[key], &buffer[0], 2);
+            if (curCost <= 0 || curCost > minCost) {
                 break;
             }
             
-            iter++;
-            biter++;
+            itemName++;
+            bufIndex++;
         }
         
-        if (curr_join_cost > 0 && curr_join_cost < min_join_cost) {
-            min_join_cost = curr_join_cost;
-            joinOrder = tableNames;
+        if (curCost > 0 && curCost < minCost) {
+            minCost = curCost;
+            jOrder = tbNames;
         }
-        curr_join_cost = 0;
+        curCost = 0;
         
-    } while (next_permutation (tableNames.begin (), tableNames.end ()));
+    } while (next_permutation (tbNames.begin (), tbNames.end ()));
     
-    if (joinOrder.size()==0){
-        joinOrder = tableNames;
+    if (jOrder.size()==0){
+        jOrder = tbNames;
     }
     
     BaseNode *root;
     
-    auto iter = joinOrder.begin ();
-    NodeSelectFile *selectFileNode = new NodeSelectFile ();
+    auto iter = jOrder.begin ();
+    NodeSelectFile *selectNode = new NodeSelectFile ();
     
     char filepath[50];
-    sprintf (filepath, "bin/%s.bin", aliaseMap[*iter].c_str ());
+    sprintf (filepath, "bin/%s.bin", aliasMapping[*iter].c_str ());
     
-    selectFileNode->file.Open (filepath);
-    selectFileNode->opened = true;
-    selectFileNode->pipeId = getPid ();
-    selectFileNode->outputSchema = Schema (schemaMap[aliaseMap[*iter]]);
-    selectFileNode->outputSchema.ResetSchema (*iter);
+    selectNode->file.Open (filepath);
+    selectNode->opened = true;
+    selectNode->pipeId = getPid ();
+    selectNode->outputSchema = Schema (schemaMapping[aliasMapping[*iter]]);
+    selectNode->outputSchema.ResetSchema (*iter);
     
-    selectFileNode->cnf.GrowFromParseTree (boolean, &(selectFileNode->outputSchema), selectFileNode->literal);
+    selectNode->cnf.GrowFromParseTree (boolean, &(selectNode->outputSchema), selectNode->literal);
     
     iter++;
-    if (iter == joinOrder.end ()) {
+    if (iter == jOrder.end ()) {
         
-        root = selectFileNode;
+        root = selectNode;
         
     } else {
         
         NodeJoin *joinNode = new NodeJoin ();
         
         joinNode->pipeId = getPid ();
-        joinNode->leftNode = selectFileNode;
+        joinNode->leftNode = selectNode;
         
-        selectFileNode = new NodeSelectFile ();
+        selectNode = new NodeSelectFile ();
         
-        sprintf (filepath, "bin/%s.bin", aliaseMap[*iter].c_str ());
-        selectFileNode->file.Open (filepath);
-        selectFileNode->opened = true;
-        selectFileNode->pipeId = getPid ();
-        selectFileNode->outputSchema = Schema (schemaMap[aliaseMap[*iter]]);
+        sprintf (filepath, "bin/%s.bin", aliasMapping[*iter].c_str ());
+        selectNode->file.Open (filepath);
+        selectNode->opened = true;
+        selectNode->pipeId = getPid ();
+        selectNode->outputSchema = Schema (schemaMapping[aliasMapping[*iter]]);
         
-        selectFileNode->outputSchema.ResetSchema (*iter);
-        selectFileNode->cnf.GrowFromParseTree (boolean, &(selectFileNode->outputSchema), selectFileNode->literal);
+        selectNode->outputSchema.ResetSchema (*iter);
+        selectNode->cnf.GrowFromParseTree (boolean, &(selectNode->outputSchema), selectNode->literal);
         
-        joinNode->rightNode = selectFileNode;
+        joinNode->rightNode = selectNode;
         joinNode->outputSchema.GetSchemaForJoin (joinNode->leftNode->outputSchema, joinNode->rightNode->outputSchema);
         joinNode->cnf.GrowFromParseTreeForJoin(boolean, &(joinNode->leftNode->outputSchema), &(joinNode->rightNode->outputSchema), joinNode->recordLiteral);
         
         iter++;
         
-        while (iter != joinOrder.end ()) {
+        while (iter != jOrder.end ()) {
             
             NodeJoin *p = joinNode;
             
-            selectFileNode = new NodeSelectFile ();
+            selectNode = new NodeSelectFile ();
             
-            sprintf (filepath, "bin/%s.bin", (aliaseMap[*iter].c_str ()));
-            selectFileNode->file.Open (filepath);
-            selectFileNode->opened = true;
-            selectFileNode->pipeId = getPid ();
-            selectFileNode->outputSchema = Schema (schemaMap[aliaseMap[*iter]]);
-            selectFileNode->outputSchema.ResetSchema (*iter);
-            selectFileNode->cnf.GrowFromParseTree (boolean, &(selectFileNode->outputSchema), selectFileNode->literal);
+            sprintf (filepath, "bin/%s.bin", (aliasMapping[*iter].c_str ()));
+            selectNode->file.Open (filepath);
+            selectNode->opened = true;
+            selectNode->pipeId = getPid ();
+            selectNode->outputSchema = Schema (schemaMapping[aliasMapping[*iter]]);
+            selectNode->outputSchema.ResetSchema (*iter);
+            selectNode->cnf.GrowFromParseTree (boolean, &(selectNode->outputSchema), selectNode->literal);
             
             joinNode = new NodeJoin ();
             
             joinNode->pipeId = getPid ();
             joinNode->leftNode = p;
-            joinNode->rightNode = selectFileNode;
+            joinNode->rightNode = selectNode;
             
             joinNode->outputSchema.GetSchemaForJoin (joinNode->leftNode->outputSchema, joinNode->rightNode->outputSchema);
             joinNode->cnf.GrowFromParseTreeForJoin(boolean, &(joinNode->leftNode->outputSchema), &(joinNode->rightNode->outputSchema), joinNode->recordLiteral);
@@ -806,7 +853,6 @@ void SelectQuery(){
         root->printNodes ();
         
     } else {
-        //                 root->Print();
         root->runNode (pipeMapper);
         
     }
@@ -1017,23 +1063,23 @@ int main () {
         
         yyparse ();
         switch (queryType) {
-            case 1:
+            case SELECT_OPTION:
             {
                 SelectQuery();
                 break;
             }
                 
-            case 2:{
+            case CREATE_OPTION:{
                 CreateQuery();
                 break;
             }
                 
-            case 3:{
+            case DROP_OPTION:{
                 DropQuery();
                 
                 break;
             }
-            case 4:
+            case INSERT_OPTION:
             {
                 InsertQuery();
                 

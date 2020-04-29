@@ -456,11 +456,11 @@ void CopyNameList (NameList *nameList, vector<string> &names) {
     
 }
 
-void DeleteNameList (NameList *nameList) {
+void DeleteNames (NameList *nameList) {
     
     if (nameList) {
         
-        DeleteNameList (nameList->next);
+        DeleteNames (nameList->next);
         
         delete[] nameList->name;
         
@@ -570,9 +570,9 @@ void DeleteAttrList (AttrList *attrList) {
 }
 
 void cleanup () {
-    DeleteNameList (groupingAtts);
-    DeleteNameList (attsToSelect);
-    DeleteNameList (attsToSort);
+    DeleteNames (groupingAtts);
+    DeleteNames (attsToSelect);
+    DeleteNames (attsToSort);
     DeleteAttrList (attsToCreate);
     //    DeleteFunction (finalFunction);
     DeleteTableList (tables);
